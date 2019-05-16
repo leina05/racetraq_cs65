@@ -76,7 +76,8 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.edit_profile_drawer) {
             // Handle the camera action
         } else if (id == R.id.saved_drives_drawer) {
-
+            Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+            startActivity(intent);
         } else if (id == R.id.settings_drawer) {
 
         } else if (id == R.id.logout_drawer) {
