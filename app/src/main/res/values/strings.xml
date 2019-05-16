@@ -30,4 +30,5 @@
         completions."
     </string>
     <string name="title_activity_history">HistoryActivity</string>
+    <string name="title_activity_display_drive">DisplayDriveActivity</string>
 </resources>

@@ -1,5 +1,6 @@
 package edu.dartmouth.cs.racetraq;
 
+import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.dartmouth.cs.racetraq.Adapters.HistoryViewAdapter;
+import edu.dartmouth.cs.racetraq.CustomViews.RecyclerTouchListener;
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 
 public class HistoryActivity extends AppCompatActivity {
@@ -86,6 +88,17 @@ public class HistoryActivity extends AppCompatActivity {
         mAdapter = new HistoryViewAdapter(driveEntryList, getApplicationContext());
         recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
         recyclerView.setAdapter(mAdapter);
+
+
+        /* Set OnClickListener for Exercise items */
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                Intent intent = new Intent(HistoryActivity.this, DisplayDriveActivity.class);
+                startActivity(intent);
+
+            }
+        }));
 
     }
 
