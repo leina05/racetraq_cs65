@@ -29,5 +29,10 @@
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
+<<<<<<< HEAD
     <string name="lap">Lap</string>
+=======
+    <string name="title_activity_history">HistoryActivity</string>
+    <string name="title_activity_display_drive">DisplayDriveActivity</string>
+>>>>>>> 02ec5c012d7ead3778a20b0c8f94789266226f3f
 </resources>
