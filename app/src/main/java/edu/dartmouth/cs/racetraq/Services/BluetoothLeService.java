@@ -85,6 +85,7 @@ public class BluetoothLeService extends Service {
         {
             bluetoothGatt.disconnect();
         }
+        isRunning = false;
     }
 
     /**

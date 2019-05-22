@@ -88,6 +88,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     // Service Connection
     private boolean isBound = false;
     private ServiceConnection mConnection = this;
+    BleConnectionReceiver broadcastReceiver;
 
 
 
@@ -175,9 +176,9 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             isBound = false;
         }
 
-        if (gattUpdateReceiver != null)
+        if (broadcastReceiver != null)
         {
-            unregisterReceiver(gattUpdateReceiver);
+            unregisterReceiver(broadcastReceiver);
         }
     }
 
@@ -255,9 +256,6 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
     private void autostartScan() {
         if (bluetoothAdapter.isEnabled()) {
-            // If was deviceConnected, disconnect
-            //mBleManager.disconnect();
-
             // Force restart scanning
             if (mScannedDevices != null) {      // Fixed a weird bug when resuming the app (this was null on very rare occasions even if it should not be)
                 mScannedDevices.clear();
@@ -393,22 +391,35 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             }
 
             // bind to TrackingService
-            bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
-            isBound = true;
+            if (!isBound)
+            {
+                bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
+                isBound = true;
+            }
 
             // register broadcast receivers
-            IntentFilter mapFilter = new IntentFilter();
-            mapFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-            mapFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-            registerReceiver(gattUpdateReceiver, mapFilter);
+            if (broadcastReceiver == null)
+            {
+                broadcastReceiver = new BleConnectionReceiver();
+
+                IntentFilter mapFilter = new IntentFilter();
+                mapFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+                mapFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+                registerReceiver(broadcastReceiver, mapFilter);
+            }
+
 
         } else {
             Log.w(TAG, "onClickDeviceConnect index does not exist: " + scannedDeviceIndex);
         }
     }
 
-    // TODO: make this a class and create an instance of it so that checking if null works
-    private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
+    /**
+     * Broadcast Receiver for GattCallback connection events
+     */
+    private class BleConnectionReceiver extends BroadcastReceiver
+    {
+
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
@@ -421,7 +432,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
                 connectionState = STATE_DISCONNECTED;
             }
         }
-    };
+    }
 
     private void showStatusDialog(boolean show, int stringId) {
         if (show) {
