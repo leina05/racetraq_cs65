@@ -33,4 +33,8 @@
     <string name="title_activity_display_drive">DisplayDriveActivity</string>
     <string name="title_activity_connect">ConnectActivity</string>
     <string name="connect">Connect</string>
+    <string name="disconnected">disconnected</string>
+    <string name="no_devices_found">No devices found.</string>
+    <string name="connecting">Connecting...</string>
+    <string name="device_connected">Device Connected!</string>
 </resources>

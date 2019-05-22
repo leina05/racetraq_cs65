@@ -7,6 +7,7 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -29,6 +30,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import edu.dartmouth.cs.racetraq.Models.BluetoothDeviceData;
@@ -61,7 +64,13 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     private Handler handler;
     private ArrayList<BluetoothDeviceData> mScannedDevices = new ArrayList<>();
     private BluetoothDeviceData mSelectedDeviceData;
-    private boolean connected = false;
+    private boolean deviceConnected = false;
+    private int connectionState = STATE_DISCONNECTED;
+
+    private static final int STATE_DISCONNECTED = 0;
+    private static final int STATE_CONNECTING = 1;
+    private static final int STATE_CONNECTED = 2;
+
 
     // Stops scanning after 10 seconds.
     private long mLastUpdateMillis;
@@ -71,6 +80,10 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     // UI
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView.Adapter mScannedDevicesAdapter;
+    private AlertDialog mConnectingDialog;
+    private RecyclerView devicesRecyclerView;
+    private TextView noDevicesTextView;
+
 
     // Service Connection
     private boolean isBound = false;
@@ -86,27 +99,43 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        /* Set Back Button */
+        if (getSupportActionBar() != null)
+        {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finish();
+                }
+            });
+        }
+
         // Initializes Bluetooth adapter.
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
 
         handler = new Handler();
 
+        noDevicesTextView = findViewById(R.id.connect_no_devices);
 
         /* Set up recycler view */
-        RecyclerView recyclerView = findViewById(R.id.connect_view);
-        recyclerView.setHasFixedSize(true);
+        devicesRecyclerView = findViewById(R.id.connect_view);
+        devicesRecyclerView.setHasFixedSize(true);
 
         /* use a linear layout manager */
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
-        recyclerView.setLayoutManager(layoutManager);
+        devicesRecyclerView.setLayoutManager(layoutManager);
 
         /* Add HistoryViewAdapter */
         mScannedDevicesAdapter = new ConnectViewAdapter(mScannedDevices);
-        recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
-        recyclerView.setAdapter(mScannedDevicesAdapter);
+        devicesRecyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+        devicesRecyclerView.setAdapter(mScannedDevicesAdapter);
 
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeRefreshLayout);
+        mSwipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -134,6 +163,22 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
         // Update UI
         updateUI();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if(isBound)
+        {
+            unbindService(mConnection);
+            isBound = false;
+        }
+
+        if (gattUpdateReceiver != null)
+        {
+            unregisterReceiver(gattUpdateReceiver);
+        }
     }
 
     // region Permissions
@@ -210,7 +255,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
     private void autostartScan() {
         if (bluetoothAdapter.isEnabled()) {
-            // If was connected, disconnect
+            // If was deviceConnected, disconnect
             //mBleManager.disconnect();
 
             // Force restart scanning
@@ -305,6 +350,12 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             };
 
     private void updateUI() {
+
+        // Show list and hide "no devices" label
+        final boolean isListEmpty = mScannedDevices == null || mScannedDevices.size() == 0;
+        noDevicesTextView.setVisibility(isListEmpty ? View.VISIBLE : View.GONE);
+        devicesRecyclerView.setVisibility(isListEmpty ? View.GONE : View.VISIBLE);
+
         // devices list
         mScannedDevicesAdapter.notifyDataSetChanged();
     }
@@ -327,6 +378,10 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         if (scannedDeviceIndex < mScannedDevices.size()) {
             mSelectedDeviceData = mScannedDevices.get(scannedDeviceIndex);
             BluetoothDevice device = mSelectedDeviceData.getDevice();
+
+            connectionState = STATE_CONNECTING;
+
+            showStatusDialog(true, R.string.connecting);
 
             // start BluetoothLeService
             Intent bleIntent = new Intent(this, BluetoothLeService.class);
@@ -352,17 +407,53 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         }
     }
 
+    // TODO: make this a class and create an instance of it so that checking if null works
     private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                connected = true;
+                deviceConnected = true;
+                connectionState = STATE_CONNECTED;
+                showStatusDialog(true, R.string.device_connected);
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                connected = false;
+                deviceConnected = false;
+                connectionState = STATE_DISCONNECTED;
             }
         }
     };
+
+    private void showStatusDialog(boolean show, int stringId) {
+        if (show) {
+
+            // Remove if a previous dialog was open (maybe because was clicked 2 times really quick)
+            if (mConnectingDialog != null) {
+                mConnectingDialog.cancel();
+            }
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(stringId);
+
+            if (stringId == R.string.device_connected)
+            {
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+            }
+
+            // Show dialog
+            mConnectingDialog = builder.create();
+            mConnectingDialog.setCanceledOnTouchOutside(false);
+            mConnectingDialog.show();
+        } else {
+            if (mConnectingDialog != null) {
+                mConnectingDialog.cancel();
+            }
+        }
+    }
 
     /**
      * SERVICE METHODS
