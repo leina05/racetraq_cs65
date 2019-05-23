@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 
 public class MainActivity extends AppCompatActivity
@@ -76,7 +77,7 @@ public class MainActivity extends AppCompatActivity
         mNewDriveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, TrackActivity.class);
+                Intent intent = new Intent(MainActivity.this, DriveActivity.class);
                 startActivity(intent);
             }
         });
@@ -90,10 +91,12 @@ public class MainActivity extends AppCompatActivity
                 {
                     if (BluetoothLeService.isRunning())
                     {
-                        mBLEConnectButton.setEnabled(false);
                         unbindService(mConnection);
                         isBound = false;
                         stopService(new Intent(MainActivity.this, BluetoothLeService.class));
+
+                        deviceConnected = false;
+                        updateUI();
 
                     }
                 }
@@ -140,7 +143,6 @@ public class MainActivity extends AppCompatActivity
 
         if (BluetoothLeService.isRunning())
         {
-            // bind to TrackingService
             if (!isBound)
             {
                 bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
