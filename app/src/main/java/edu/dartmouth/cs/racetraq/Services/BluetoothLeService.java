@@ -6,13 +6,17 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.util.List;
 import java.util.UUID;
 
 import edu.dartmouth.cs.racetraq.ConnectActivity;
@@ -38,6 +42,11 @@ public class BluetoothLeService extends Service {
     public final static String ACTION_GATT_SERVICES_DISCOVERED = "edu.dartmouth.cs.racetraq.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE = "edu.dartmouth.cs.racetraq.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA = "edu.dartmouth.cs.racetraq.EXTRA_DATA";
+    private static String CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+
+
+    private final IBinder mBinder = new LocalBinder();
+
 
 
     /**
@@ -51,7 +60,7 @@ public class BluetoothLeService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
@@ -85,6 +94,8 @@ public class BluetoothLeService extends Service {
         {
             bluetoothGatt.disconnect();
         }
+        close();
+
         isRunning = false;
     }
 
@@ -112,8 +123,6 @@ public class BluetoothLeService extends Service {
                         connectionState = STATE_CONNECTED;
                         broadcastUpdate(intentAction);
                         Log.i(TAG, "Connected to GATT server.");
-                        Log.i(TAG, "Attempting to start service discovery:" +
-                                bluetoothGatt.discoverServices());
 
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                         intentAction = ACTION_GATT_DISCONNECTED;
@@ -143,6 +152,12 @@ public class BluetoothLeService extends Service {
                     }
                 }
 
+                @Override
+                public void onCharacteristicChanged(BluetoothGatt gatt,
+                                                    BluetoothGattCharacteristic characteristic) {
+                    broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+                }
+
             };
 
     private void broadcastUpdate(final String action) {
@@ -158,11 +173,7 @@ public class BluetoothLeService extends Service {
         // For all other profiles, writes the data formatted in HEX.
         final byte[] data = characteristic.getValue();
         if (data != null && data.length > 0) {
-            final StringBuilder stringBuilder = new StringBuilder(data.length);
-            for (byte byteChar : data)
-                stringBuilder.append(String.format("%02X ", byteChar));
-            intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
-                    stringBuilder.toString());
+            intent.putExtra(EXTRA_DATA, new String(data));
         }
         sendBroadcast(intent);
     }
@@ -178,5 +189,56 @@ public class BluetoothLeService extends Service {
             bluetoothDevice = null;
         }
     }
+
+    /**
+     * PUBLIC FUNCTIONS
+     */
+
+    /**
+     * Retrieves a list of supported GATT services on the connected device. This should be
+     * invoked only after {@code BluetoothGatt#discoverServices()} completes successfully.
+     *
+     * @return A {@code List} of supported services.
+     */
+    public List<BluetoothGattService> getSupportedGattServices() {
+        if (bluetoothGatt == null) return null;
+
+        return bluetoothGatt.getServices();
+    }
+
+    /**
+     * Enables or disables notification on a give characteristic.
+     *
+     * @param characteristic Characteristic to act on.
+     * @param enabled If true, enable notification.  False otherwise.
+     */
+    public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enabled) {
+        if (bluetoothAdapter == null || bluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+
+        final UUID clientCharacteristicConfiguration = UUID.fromString(CHARACTERISTIC_CONFIG);
+        final BluetoothGattDescriptor config = characteristic.getDescriptor(clientCharacteristicConfiguration);
+
+        // enableNotification/disable locally
+        bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+
+        // enableNotification/disable remotely
+        config.setValue(enabled ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        bluetoothGatt.writeDescriptor(config);
+    }
+
+    public void discoverServices() {
+        Log.i(TAG, "Attempting to start service discovery:" + bluetoothGatt.discoverServices());
+    }
+
+    public class LocalBinder extends Binder {
+        public BluetoothLeService getService() {
+            return BluetoothLeService.this;
+        }
+    }
+
+
 
 }
