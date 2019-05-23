@@ -70,19 +70,6 @@ public class BluetoothLeService extends Service {
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
 
-        // Connect to device
-        bluetoothDeviceAddress = intent.getStringExtra(ConnectActivity.DEVICE_ADDRESS_KEY);
-        bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothDeviceAddress);
-        if (bluetoothDevice == null) {
-            Log.w(TAG, "Device not found.  Unable to connect.");
-
-            // broadcast connect failed
-        }
-        else
-        {
-            bluetoothGatt = bluetoothDevice.connectGatt(getApplicationContext(), false, gattCallback);
-        }
-
         return START_STICKY;
     }
 
@@ -193,6 +180,62 @@ public class BluetoothLeService extends Service {
     /**
      * PUBLIC FUNCTIONS
      */
+
+
+    /**
+     * Connects to the GATT server hosted on the Bluetooth LE device.
+     *
+     * @param address The device address of the destination device.
+     *
+     * @return Return true if the connection is initiated successfully. The connection result
+     *         is reported asynchronously through the
+     *         {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
+     *         callback.
+     */
+    public boolean connect(final String address) {
+        if (bluetoothAdapter == null || address == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+            return false;
+        }
+
+        // Previously connected device.  Try to reconnect.
+        if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress) && bluetoothGatt != null) {
+            Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
+            if (bluetoothGatt.connect()) {
+                connectionState = STATE_CONNECTING;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+        if (device == null) {
+            Log.w(TAG, "Device not found.  Unable to connect.");
+            return false;
+        }
+        // We want to directly connect to the device, so we are setting the autoConnect
+        // parameter to false.
+        bluetoothGatt = device.connectGatt(this, false, gattCallback);
+        Log.d(TAG, "Trying to create a new connection.");
+        bluetoothDeviceAddress = address;
+        connectionState = STATE_CONNECTING;
+        return true;
+    }
+
+    /**
+     * Disconnects an existing connection or cancel a pending connection. The disconnection result
+     * is reported asynchronously through the
+     * {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
+     * callback.
+     */
+    public void disconnect() {
+        if (bluetoothAdapter == null || bluetoothAdapter == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+        bluetoothGatt.disconnect();
+    }
 
     /**
      * Retrieves a list of supported GATT services on the connected device. This should be

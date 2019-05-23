@@ -164,6 +164,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        mBluetoothLeService = null;
 
     }
 

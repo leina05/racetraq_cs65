@@ -86,6 +86,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
 
     // Service Connection
+    private BluetoothLeService mBluetoothLeService;
     private boolean isBound = false;
     private ServiceConnection mConnection = this;
     BleConnectionReceiver broadcastReceiver;
@@ -100,7 +101,9 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        /* Set Back Button */
+        /*** UI ***/
+
+        // Set Back Button
         if (getSupportActionBar() != null)
         {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -115,23 +118,17 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             });
         }
 
-        // Initializes Bluetooth adapter.
-        bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        bluetoothAdapter = bluetoothManager.getAdapter();
-
-        handler = new Handler();
-
         noDevicesTextView = findViewById(R.id.connect_no_devices);
 
-        /* Set up recycler view */
+        // Set up recycler view
         devicesRecyclerView = findViewById(R.id.connect_view);
         devicesRecyclerView.setHasFixedSize(true);
 
-        /* use a linear layout manager */
+        // use a linear layout manager
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
         devicesRecyclerView.setLayoutManager(layoutManager);
 
-        /* Add HistoryViewAdapter */
+        // Add HistoryViewAdapter
         mScannedDevicesAdapter = new ConnectViewAdapter(mScannedDevices);
         devicesRecyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
         devicesRecyclerView.setAdapter(mScannedDevicesAdapter);
@@ -153,6 +150,32 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         });
         requestLocationPermissionIfNeeded();
 
+
+        /*** Bluetooth ***/
+
+        bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        bluetoothAdapter = bluetoothManager.getAdapter();
+        handler = new Handler();
+
+        // bind to BleService
+        Intent bleIntent = new Intent(this, BluetoothLeService.class);
+
+        if (!isBound)
+        {
+            bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
+            isBound = true;
+        }
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (broadcastReceiver != null)
+        {
+            unregisterReceiver(broadcastReceiver);
+        }
     }
 
     @Override
@@ -164,6 +187,16 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
         // Update UI
         updateUI();
+
+        // register receiver
+        if (broadcastReceiver == null)
+        {
+            broadcastReceiver = new BleConnectionReceiver();
+        }
+        IntentFilter mapFilter = new IntentFilter();
+        mapFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+        mapFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+        registerReceiver(broadcastReceiver, mapFilter);
     }
 
     @Override
@@ -174,11 +207,6 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         {
             unbindService(mConnection);
             isBound = false;
-        }
-
-        if (broadcastReceiver != null)
-        {
-            unregisterReceiver(broadcastReceiver);
         }
     }
 
@@ -381,32 +409,12 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
 
             showStatusDialog(true, R.string.connecting);
 
-            // start BluetoothLeService
-            Intent bleIntent = new Intent(this, BluetoothLeService.class);
-            bleIntent.putExtra(DEVICE_ADDRESS_KEY, device.getAddress());
-
-            if (!BluetoothLeService.isRunning())
+            // connect to bluetooth device
+            if (mBluetoothLeService != null)
             {
-                startService(bleIntent);
+                mBluetoothLeService.connect(device.getAddress());
             }
-
-            // bind to TrackingService
-            if (!isBound)
-            {
-                bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
-                isBound = true;
-            }
-
-            // register broadcast receivers
-            if (broadcastReceiver == null)
-            {
-                broadcastReceiver = new BleConnectionReceiver();
-
-                IntentFilter mapFilter = new IntentFilter();
-                mapFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-                mapFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-                registerReceiver(broadcastReceiver, mapFilter);
-            }
+;
 
 
         } else {
@@ -470,12 +478,14 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
      * SERVICE METHODS
      **/
     @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+    public void onServiceConnected(ComponentName componentName, IBinder service) {
+        mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
 
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
+        mBluetoothLeService = null;
 
     }
 
