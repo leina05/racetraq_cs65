@@ -14,6 +14,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity
     private boolean deviceConnected = false;
 
     // Service Connection
+    private BluetoothLeService mBluetoothLeService;
     private boolean isBound = false;
     private ServiceConnection mConnection = this;
     private BleConnectionReceiver broadcastReceiver;
@@ -91,13 +93,8 @@ public class MainActivity extends AppCompatActivity
                 {
                     if (BluetoothLeService.isRunning())
                     {
-                        unbindService(mConnection);
-                        isBound = false;
-                        stopService(new Intent(MainActivity.this, BluetoothLeService.class));
-
-                        deviceConnected = false;
-                        updateUI();
-
+                        mBluetoothLeService.disconnect();
+                        mBLEConnectButton.setEnabled(false);
                     }
                 }
                 else
@@ -120,21 +117,19 @@ public class MainActivity extends AppCompatActivity
             registerReceiver(broadcastReceiver, mapFilter);
         }
 
+        // start BluetoothLeService
+        Intent bleIntent = new Intent(this, BluetoothLeService.class);
+
+        if (!BluetoothLeService.isRunning())
+        {
+            startService(bleIntent);
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
-        if (connectedDevices != null && !connectedDevices.isEmpty())
-        {
-            deviceConnected = true;
-        }
-        else
-        {
-            deviceConnected = false;
-        }
 
         updateUI();
 
@@ -202,11 +197,14 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
+        mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
 
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        mBluetoothLeService = null;
+        isBound = false;
 
     }
 
@@ -214,6 +212,17 @@ public class MainActivity extends AppCompatActivity
      * PRIVATE FUNCTIONS
      */
     private void updateUI() {
+
+        connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+        if (connectedDevices != null && !connectedDevices.isEmpty())
+        {
+            deviceConnected = true;
+        }
+        else
+        {
+            deviceConnected = false;
+        }
+
         if (deviceConnected)
         {
             mBLEConnectButton.setText("Disconnect");
@@ -238,6 +247,7 @@ public class MainActivity extends AppCompatActivity
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
                 deviceConnected = true;
+                updateUI();
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 deviceConnected = false;
                 mBLEConnectButton.setEnabled(true);
