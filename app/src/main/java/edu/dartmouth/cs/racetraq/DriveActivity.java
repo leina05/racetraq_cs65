@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,9 +19,18 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.TextView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
@@ -56,6 +67,10 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     // Drive Data
     private DriveDatapoint driveDatapoint;
 
+    // Firebase
+    private DatabaseReference mDatabase;
+    private FirebaseAuth mFirebaseAuth;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +78,10 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         setContentView(R.layout.activity_drive);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Firebase
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        mFirebaseAuth = FirebaseAuth.getInstance();
 
         // UI
         FloatingActionButton finish_button = findViewById(R.id.finish_drive_button);
@@ -81,6 +100,12 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         battVoltTextView = findViewById(R.id.drive_batt_voltage);
 
         mChronometer.start();
+
+        // Write a message to the database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("message");
+        myRef.setValue("Hello, World!");
+
 
         // Bind to BLE service
         Intent bleIntent = new Intent(this, BluetoothLeService.class);
@@ -210,8 +235,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         }
     }
 
-    private void packageData(String data)
-    {
+    private void packageData(String data) {
         String [] arr = data.split(",");
         if (arr.length == 5)
         {
@@ -222,17 +246,59 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
             driveDatapoint.setEng_temp(arr[3]);
             driveDatapoint.setBatt_voltage(arr[4]);
 
+            addFirebaseEntry(driveDatapoint);
+
             displayData(driveDatapoint);
         }
 
+    }
+
+    private void addFirebaseEntry(DriveDatapoint datapoint) {
+
+        mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
+                .child("drive_entries").push().setValue(datapoint)
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            // finished inserting
+                        } else {
+                            // insertion failed
+                        }
+                    }
+                });
 
     }
-    private void displayData(DriveDatapoint datapoint)
-    {
+
+    private void displayData(DriveDatapoint datapoint) {
         tpsTextView.setText(datapoint.getTps());
         engRpmTextView.setText(datapoint.getEng_rpm());
         speedTextView.setText(datapoint.getSpeed());
         engTempTextView.setText(datapoint.getEng_temp());
         battVoltTextView.setText(datapoint.getBatt_voltage());
     }
+
+
+    public String EmailHash(String email) {
+
+        MessageDigest mDigest = null;
+        try {
+            mDigest = MessageDigest.getInstance("MD5");
+
+            mDigest.update(email.getBytes());
+            byte messageDigestArray[] = mDigest.digest();
+
+            StringBuffer hex = new StringBuffer();
+            for (int i = 0; i < messageDigestArray.length; i++) {
+                hex.append(Integer.toHexString(0xFF & messageDigestArray[i]));
+            }
+            return hex.toString();
+
+        }catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return " ";
+    }
+
 }
+

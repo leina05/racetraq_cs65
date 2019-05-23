@@ -25,6 +25,8 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 import java.util.ArrayList;
 
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
@@ -32,6 +34,10 @@ import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
+
+    // Firebase
+    private FirebaseAuth mAuth;
+
 
     // UI
     private Button mNewDriveButton;
@@ -56,6 +62,13 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        /* Check firebase authentication */
+        mAuth = FirebaseAuth.getInstance();
+        if (mAuth.getCurrentUser() == null) {
+            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+            startActivity(intent);
+        }
 
         /* Set up Bluetooth */
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
