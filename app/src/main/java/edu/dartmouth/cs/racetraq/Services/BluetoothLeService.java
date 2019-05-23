@@ -77,6 +77,17 @@ public class BluetoothLeService extends Service {
         return START_STICKY;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // disconnect BLE device
+        if (bluetoothGatt != null && bluetoothAdapter != null)
+        {
+            bluetoothGatt.disconnect();
+        }
+        isRunning = false;
+    }
+
     /**
      * STATIC METHODS
      */
