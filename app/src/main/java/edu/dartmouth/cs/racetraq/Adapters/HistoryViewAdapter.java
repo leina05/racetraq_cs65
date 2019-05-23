@@ -1,8 +1,6 @@
 package edu.dartmouth.cs.racetraq.Adapters;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -12,16 +10,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import edu.dartmouth.cs.racetraq.Models.DriveEntry;
+import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 import edu.dartmouth.cs.racetraq.R;
 
 public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.DriveViewHolder>{
 
-    private List<DriveEntry> entryList;
+    private List<MockDriveEntry> entryList;
     private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
     private Context context;
     private String unitPref;
@@ -49,7 +46,7 @@ public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.
     /**
      * Constructor
      */
-    public HistoryViewAdapter(List<DriveEntry> entryList, Context context) {
+    public HistoryViewAdapter(List<MockDriveEntry> entryList, Context context) {
         this.entryList = entryList;
         this.context = context;
     }
@@ -63,7 +60,7 @@ public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull DriveViewHolder holder, int position) {
-        DriveEntry entry = entryList.get(position);
+        MockDriveEntry entry = entryList.get(position);
 
         // Set image
         holder.map_thumbnail.setImageBitmap(entry.getMap_thumbnail());

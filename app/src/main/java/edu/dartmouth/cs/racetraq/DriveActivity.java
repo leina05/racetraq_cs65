@@ -8,7 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.media.MediaPlayer;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -33,7 +34,9 @@ import java.util.List;
 import java.util.Objects;
 
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
+import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
+import edu.dartmouth.cs.racetraq.Services.TrackingService;
 
 public class DriveActivity extends AppCompatActivity implements ServiceConnection {
 
@@ -46,11 +49,21 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     public static final String UUID_DFU = "00001530-1212-EFDE-1523-785FEABCD123";
     public static final int kTxMaxCharacters = 20;
 
-    // Service Connection
+    // Tracking Service Constants
+    public static final String LOCATION_RECEIVE_ACTION = "edu.dartmouth.cs.racetraq.ACTIVITY_LOCATION_RECEIVE";
+    public static final String LOCATION_KEY = "locationKey";
+
+
+    // BLE Service Connection
     private BluetoothLeService mBluetoothLeService;
-    private boolean isBound = false;
-    private ServiceConnection mConnection = this;
-    private BroadcastReceiver broadcastReceiver;
+    private boolean isBoundBLE = false;
+    private ServiceConnection bleConnection = this;
+    private BroadcastReceiver bleDataReceiver;
+
+    // Tracking Service Connection
+    private boolean isBoundTracking = false;
+    private ServiceConnection trackingConnection;
+    private BroadcastReceiver mapDisplayReceiver;
 
     // Gatt
     private ArrayList<BluetoothGattCharacteristic> mGattCharacteristics;
@@ -67,6 +80,13 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     // Drive Data
     private DriveDatapoint driveDatapoint;
     private String mDriveTimeStamp;
+    private double mDriveAvgSpeed = 0;
+    private double mDriveTopSpeed = 0;
+    private double mDriveDistance = 0;
+    private ArrayList<LatLng> mLocationList = new ArrayList<>();
+    private String mDriveName = "MyDrive";
+    private int numDatapoints = 0;
+
 
     // Firebase
     private DatabaseReference mDatabase;
@@ -110,12 +130,40 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
 
         if (BluetoothLeService.isRunning())
         {
-            if (!isBound)
+            if (!isBoundBLE)
             {
-                bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
-                isBound = true;
+                bindService(bleIntent, bleConnection, Context.BIND_AUTO_CREATE);
+                isBoundBLE = true;
             }
         }
+
+        // Bind to Tracking Service
+        trackingConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+
+            }
+        };
+
+        // start TrackingService
+        Intent trackingIntent = new Intent(this, TrackingService.class);
+
+        if (!TrackingService.isRunning())
+        {
+            startService(trackingIntent);
+        }
+
+        // bind to TrackingService
+        bindService(trackingIntent, trackingConnection, Context.BIND_AUTO_CREATE);
+        isBoundTracking = true;
+
+
+
 
     }
 
@@ -124,20 +172,34 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         super.onResume();
 
         // register receiver
-        if (broadcastReceiver == null)
+        if (bleDataReceiver == null)
         {
-            broadcastReceiver = new BleDataReceiver();
+            bleDataReceiver = new BleDataReceiver();
         }
-        registerReceiver(broadcastReceiver, makeGattUpdateIntentFilter());
+        registerReceiver(bleDataReceiver, makeGattUpdateIntentFilter());
+
+        // register broadcast receivers
+        if (mapDisplayReceiver == null)
+        {
+            mapDisplayReceiver = new MapDisplayReceiver();
+        }
+        IntentFilter mapFilter = new IntentFilter();
+        mapFilter.addAction(LOCATION_RECEIVE_ACTION);
+        registerReceiver(mapDisplayReceiver, mapFilter);
+
 
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (broadcastReceiver != null)
+        if (bleDataReceiver != null)
         {
-            unregisterReceiver(broadcastReceiver);
+            unregisterReceiver(bleDataReceiver);
+        }
+        if (mapDisplayReceiver != null)
+        {
+            unregisterReceiver(mapDisplayReceiver);
         }
 
     }
@@ -146,11 +208,16 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     protected void onDestroy() {
         super.onDestroy();
 
-        if (isBound)
+        if (isBoundBLE)
         {
-            unbindService(mConnection);
+            unbindService(bleConnection);
         }
         mBluetoothLeService = null;
+
+        if (isBoundTracking)
+        {
+            unbindService(trackingConnection);
+        }
     }
 
     @Override
@@ -195,6 +262,19 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
                 String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
                 packageData(data);
             }
+        }
+    }
+
+    /**
+     * Receiver for Location updates
+     */
+    public class MapDisplayReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // get location and add to locationList
+            Location location = intent.getParcelableExtra(LOCATION_KEY);
+            mLocationList.add(new LatLng(location.getLatitude(), location.getLongitude()));
         }
     }
 
@@ -245,10 +325,28 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
             driveDatapoint.setEng_temp(arr[3]);
             driveDatapoint.setBatt_voltage(arr[4]);
 
+            // update drive data
+            double speed = Double.parseDouble(arr[1]);
+            mDriveAvgSpeed += speed;
+            if (speed > mDriveTopSpeed)
+            {
+                mDriveTopSpeed = speed;
+            }
+            numDatapoints++;
+
             addFirebaseEntry(driveDatapoint);
 
             displayData(driveDatapoint);
         }
+
+    }
+
+    private void saveDrive() {
+        mDriveAvgSpeed /= numDatapoints;
+
+        DriveEntry driveEntry = new DriveEntry();
+        driveEntry.setDriveAvgSpeed(Double.toString(mDriveAvgSpeed));
+
 
     }
 

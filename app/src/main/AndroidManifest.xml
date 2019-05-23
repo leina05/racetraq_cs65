@@ -73,6 +73,7 @@
         </activity>
 
         <service android:name=".Services.BluetoothLeService" />
+        <service android:name=".Services.TrackingService" />
     </application>
 
 </manifest>

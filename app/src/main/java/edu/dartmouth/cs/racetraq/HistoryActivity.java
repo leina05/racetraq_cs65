@@ -3,8 +3,6 @@ package edu.dartmouth.cs.racetraq;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -17,12 +15,12 @@ import java.util.List;
 
 import edu.dartmouth.cs.racetraq.Adapters.HistoryViewAdapter;
 import edu.dartmouth.cs.racetraq.CustomViews.RecyclerTouchListener;
-import edu.dartmouth.cs.racetraq.Models.DriveEntry;
+import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 
 public class HistoryActivity extends AppCompatActivity {
 
     private RecyclerView.Adapter mAdapter;
-    private List<DriveEntry> driveEntryList = new ArrayList<>();
+    private List<MockDriveEntry> driveEntryList = new ArrayList<>();
 
 
     @Override
@@ -49,7 +47,7 @@ public class HistoryActivity extends AppCompatActivity {
         setTitle("Saved Drives");
 
         /* Initialize Drive Entries */
-        DriveEntry entry = new DriveEntry();
+        MockDriveEntry entry = new MockDriveEntry();
         entry.setName("Evening Drive");
         entry.setDateTime("May 15, 2019 at 2:30 PM");
         entry.setDistance(18.7);
@@ -58,7 +56,7 @@ public class HistoryActivity extends AppCompatActivity {
         entry.setMap_thumbnail(BitmapFactory.decodeResource(getResources(), R.drawable.dartmouth_map));
         driveEntryList.add(entry);
 
-        entry = new DriveEntry();
+        entry = new MockDriveEntry();
         entry.setName("Evening Drive");
         entry.setDateTime("May 15, 2019 at 2:30 PM");
         entry.setDistance(18.7);
@@ -67,7 +65,7 @@ public class HistoryActivity extends AppCompatActivity {
         entry.setMap_thumbnail(BitmapFactory.decodeResource(getResources(), R.drawable.dartmouth_map));
         driveEntryList.add(entry);
 
-        entry = new DriveEntry();
+        entry = new MockDriveEntry();
         entry.setName("Evening Drive");
         entry.setDateTime("May 15, 2019 at 2:30 PM");
         entry.setDistance(18.7);
