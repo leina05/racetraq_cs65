@@ -66,6 +66,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
 
     // Drive Data
     private DriveDatapoint driveDatapoint;
+    private String mDriveTimeStamp;
 
     // Firebase
     private DatabaseReference mDatabase;
@@ -78,6 +79,8 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         setContentView(R.layout.activity_drive);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mDriveTimeStamp = Long.toString(System.currentTimeMillis());
 
         // Firebase
         mDatabase = FirebaseDatabase.getInstance().getReference();
@@ -100,11 +103,6 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         battVoltTextView = findViewById(R.id.drive_batt_voltage);
 
         mChronometer.start();
-
-        // Write a message to the database
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("message");
-        myRef.setValue("Hello, World!");
 
 
         // Bind to BLE service
@@ -257,7 +255,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     private void addFirebaseEntry(DriveDatapoint datapoint) {
 
         mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
-                .child("drive_entries").push().setValue(datapoint)
+                .child("drive_entries").child(mDriveTimeStamp).push().setValue(datapoint)
                 .addOnCompleteListener(this, new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
