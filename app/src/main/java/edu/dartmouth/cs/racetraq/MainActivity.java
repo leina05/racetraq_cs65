@@ -200,7 +200,9 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.settings_drawer) {
 
         } else if (id == R.id.logout_drawer) {
-
+            mAuth.signOut();
+            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
