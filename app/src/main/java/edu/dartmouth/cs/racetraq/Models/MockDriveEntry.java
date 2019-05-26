@@ -1,17 +1,63 @@
 package edu.dartmouth.cs.racetraq.Models;
 
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+
+import edu.dartmouth.cs.racetraq.R;
 
 public class MockDriveEntry {
     private String name;
     private String dateTime;
+    private long timeMillis;
     private double distance;
     private double topSpeed;
+    private double avgSpeed;
     private String duration;
+    private ArrayList<LatLng> locationList;
     private Bitmap map_thumbnail;
+
+    private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
+
 
 
     public MockDriveEntry() {
+
+    }
+
+    public MockDriveEntry(DriveEntry driveEntry, Context context)
+    {
+        this.name = driveEntry.getDriveName();
+        this.dateTime = driveEntry.getDriveTimeStamp();
+        try {
+            Date date = dateTimeFormat.parse(driveEntry.getDriveTimeStamp());
+            this.timeMillis = date.getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        this.avgSpeed = Double.parseDouble(driveEntry.getDriveAvgSpeed());
+        this.topSpeed = Double.parseDouble(driveEntry.getDriveTopSpeed());
+        this.distance = Double.parseDouble(driveEntry.getDriveDistance());
+        this.duration = driveEntry.getDriveDuration();
+
+        Gson gson = new Gson();
+        Type collectionType = new TypeToken<ArrayList<LatLng>>(){}.getType();
+        this.locationList = gson.fromJson(driveEntry.getLocationList(), collectionType);
+
+        // Set dummy bitmap for now
+        this.map_thumbnail = BitmapFactory.decodeResource(context.getResources(), R.drawable.dartmouth_map);
 
     }
 
@@ -62,5 +108,29 @@ public class MockDriveEntry {
 
     public void setMap_thumbnail(Bitmap map_thumbnail) {
         this.map_thumbnail = map_thumbnail;
+    }
+
+    public ArrayList<LatLng> getLocationList() {
+        return locationList;
+    }
+
+    public void setLocationList(ArrayList<LatLng> locationList) {
+        this.locationList = locationList;
+    }
+
+    public double getAvgSpeed() {
+        return avgSpeed;
+    }
+
+    public void setAvgSpeed(double avgSpeed) {
+        this.avgSpeed = avgSpeed;
+    }
+
+    public long getTimeMillis() {
+        return timeMillis;
+    }
+
+    public void setTimeMillis(long timeMillis) {
+        this.timeMillis = timeMillis;
     }
 }

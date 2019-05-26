@@ -6,9 +6,16 @@ import java.util.ArrayList;
 
 public class DriveEntry {
     private String driveTimeStamp;
+    private String timeMillis;
     private String driveAvgSpeed;
     private String driveTopSpeed;
     private String driveDistance;
+    private String driveDuration;
+    private String locationList;
+    private String driveName;
+
+    public DriveEntry() {
+    }
 
     public String getLocationList() {
         return locationList;
@@ -16,12 +23,6 @@ public class DriveEntry {
 
     public void setLocationList(String locationList) {
         this.locationList = locationList;
-    }
-
-    private String locationList;
-    private String driveName;
-
-    public DriveEntry() {
     }
 
     public String getDriveTimeStamp() {
@@ -62,5 +63,13 @@ public class DriveEntry {
 
     public void setDriveName(String driveName) {
         this.driveName = driveName;
+    }
+
+    public String getDriveDuration() {
+        return driveDuration;
+    }
+
+    public void setDriveDuration(String driveDuration) {
+        this.driveDuration = driveDuration;
     }
 }

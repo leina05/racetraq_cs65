@@ -75,7 +75,7 @@ public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.
         holder.distance.setText("Distance: "+String.format("%.2f", entry.getDistance())+" miles");
 
         // set duration
-        holder.duration.setText("Duration:" +entry.getDuration());
+        holder.duration.setText("Duration: " +entry.getDuration());
 
         // set top speed
         holder.top_speed.setText("Top Speed: "+String.format("%.2f", entry.getTopSpeed())+" mph");

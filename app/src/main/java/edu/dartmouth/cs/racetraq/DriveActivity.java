@@ -13,11 +13,13 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Chronometer;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -25,16 +27,20 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.gson.Gson;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
+import edu.dartmouth.cs.racetraq.Models.SaveDriveDialogFragment;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 import edu.dartmouth.cs.racetraq.Services.TrackingService;
 
@@ -86,7 +92,11 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     private ArrayList<LatLng> mLocationList = new ArrayList<>();
     private String mDriveName = "MyDrive";
     private int numDatapoints = 0;
-
+    private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
+    private SimpleDateFormat durationFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US);
+    private Location lastLocation;
+    private static final double KM_TO_MILE = 0.621371;
+    private long endTime;
 
     // Firebase
     private DatabaseReference mDatabase;
@@ -107,11 +117,39 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         mFirebaseAuth = FirebaseAuth.getInstance();
 
         // UI
+
+        /* Set Back Button */
+        if (getSupportActionBar() != null)
+        {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finish();
+                }
+            });
+        }
+
+        /* FAB */
         FloatingActionButton finish_button = findViewById(R.id.finish_drive_button);
         finish_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // stop receiving ble Data
+                if (bleDataReceiver != null)
+                {
+                    unregisterReceiver(bleDataReceiver);
+                    bleDataReceiver = null;
+                }
+                // pause chronometer
+                mChronometer.stop();
+                endTime = System.currentTimeMillis();
+
                 // end drive
+                mShowDialog(R.string.drive_name);
             }
         });
 
@@ -218,6 +256,11 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         {
             unbindService(trackingConnection);
         }
+
+        if (TrackingService.isRunning())
+        {
+            stopService(new Intent(this, TrackingService.class));
+        }
     }
 
     @Override
@@ -275,6 +318,13 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
             // get location and add to locationList
             Location location = intent.getParcelableExtra(LOCATION_KEY);
             mLocationList.add(new LatLng(location.getLatitude(), location.getLongitude()));
+
+            if (lastLocation != null)
+            {
+                mDriveDistance += lastLocation.distanceTo(location)/1000;   // get distance in kms
+            }
+
+            lastLocation = location;
         }
     }
 
@@ -334,31 +384,85 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
             }
             numDatapoints++;
 
-            addFirebaseEntry(driveDatapoint);
+            addFirebaseDatapoint(driveDatapoint);
 
             displayData(driveDatapoint);
         }
 
     }
 
+    /**
+     * Show dialog fragment
+     */
+    private void mShowDialog(int title_id) {
+        DialogFragment newFragment = SaveDriveDialogFragment.createInstance(title_id);
+        newFragment.setCancelable(false);
+        newFragment.show(getSupportFragmentManager(), "dialog");
+    }
+
     private void saveDrive() {
         mDriveAvgSpeed /= numDatapoints;
 
         DriveEntry driveEntry = new DriveEntry();
+        driveEntry.setDriveName(mDriveName);
         driveEntry.setDriveAvgSpeed(Double.toString(mDriveAvgSpeed));
+        driveEntry.setDriveDistance(Double.toString(mDriveDistance*KM_TO_MILE));
+        driveEntry.setDriveTimeStamp(dateTimeFormat.format(Long.parseLong(mDriveTimeStamp)));
+        driveEntry.setDriveTopSpeed(Double.toString(mDriveTopSpeed));
+        driveEntry.setDriveDuration(millisToString(endTime- Long.parseLong(mDriveTimeStamp)));
+        Gson gson = new Gson();
+        String gps_trace = gson.toJson(mLocationList);
+        driveEntry.setLocationList(gps_trace);
+
+        // post drive to firebase
+        addFirebaseSummary(driveEntry);
 
 
     }
 
-    private void addFirebaseEntry(DriveDatapoint datapoint) {
+    private String millisToString(long millis)
+    {
+        long mill = millis % 1000;
+        long seconds = millis/1000;
+        long s = seconds % 60;
+        long m = (seconds / 60) % 60;
+        long h = (seconds /60) / 60;
+
+        String ts = String.format("%02d:%02d:%02d.%03d", h, m, s, mill);
+
+        return ts;
+    }
+
+
+
+    private void addFirebaseDatapoint(DriveDatapoint datapoint) {
 
         mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
-                .child("drive_entries").child(mDriveTimeStamp).push().setValue(datapoint)
+                .child("drive_entries").child(mDriveTimeStamp).child("datapoints").push().setValue(datapoint)
                 .addOnCompleteListener(this, new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
                             // finished inserting
+                        } else {
+                            // insertion failed
+                        }
+                    }
+                });
+
+    }
+
+    private void addFirebaseSummary(DriveEntry summary) {
+
+        mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
+                .child("drive_entries").child(mDriveTimeStamp).child("summary").setValue(summary)
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            // finished inserting
+                            Toast.makeText(DriveActivity.this, "Drive Saved.", Toast.LENGTH_LONG).show();
+                            finish();
                         } else {
                             // insertion failed
                         }
@@ -376,7 +480,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     }
 
 
-    public String EmailHash(String email) {
+    public static String EmailHash(String email) {
 
         MessageDigest mDigest = null;
         try {
@@ -395,6 +499,32 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
             e.printStackTrace();
         }
         return " ";
+    }
+
+    /**
+     * Save function for all dialogs other than date and time
+     */
+    public void saveDialogEntry(int title_id, String data)
+    {
+        switch(title_id)
+        {
+            case R.string.drive_name:
+                mDriveName = data;
+                saveDrive();
+            default:
+                break;
+        }
+    }
+
+    public void resumeDrive() {
+        // register receiver
+        if (bleDataReceiver == null)
+        {
+            bleDataReceiver = new BleDataReceiver();
+        }
+        registerReceiver(bleDataReceiver, makeGattUpdateIntentFilter());
+
+        mChronometer.start();
     }
 
 }

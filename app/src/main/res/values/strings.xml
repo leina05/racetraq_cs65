@@ -38,4 +38,5 @@
     <string name="error_field_required">This field is required</string>
     <string name="error_password_invalid">Password must be at least 6 characters long</string>
     <string name="error_email_invalid">This email address is invalid</string>
+    <string name="drive_name">Drive Name</string>
 </resources>

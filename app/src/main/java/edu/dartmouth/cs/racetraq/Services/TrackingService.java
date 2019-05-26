@@ -75,7 +75,7 @@ public class TrackingService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        notificationManager.cancelAll();
+//        notificationManager.cancelAll();
         isRunning = false;
     }
 
