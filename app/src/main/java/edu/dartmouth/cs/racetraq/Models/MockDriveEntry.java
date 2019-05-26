@@ -27,6 +27,7 @@ public class MockDriveEntry {
     private String duration;
     private ArrayList<LatLng> locationList;
     private Bitmap map_thumbnail;
+    private long numPoints;
 
     private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
 
@@ -40,12 +41,7 @@ public class MockDriveEntry {
     {
         this.name = driveEntry.getDriveName();
         this.dateTime = driveEntry.getDriveTimeStamp();
-        try {
-            Date date = dateTimeFormat.parse(driveEntry.getDriveTimeStamp());
-            this.timeMillis = date.getTime();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        this.timeMillis = 0;
 
         this.avgSpeed = Double.parseDouble(driveEntry.getDriveAvgSpeed());
         this.topSpeed = Double.parseDouble(driveEntry.getDriveTopSpeed());
@@ -55,6 +51,8 @@ public class MockDriveEntry {
         Gson gson = new Gson();
         Type collectionType = new TypeToken<ArrayList<LatLng>>(){}.getType();
         this.locationList = gson.fromJson(driveEntry.getLocationList(), collectionType);
+
+        this.numPoints = Long.parseLong(driveEntry.getNumPoints());
 
         // Set dummy bitmap for now
         this.map_thumbnail = BitmapFactory.decodeResource(context.getResources(), R.drawable.dartmouth_map);
@@ -132,5 +130,13 @@ public class MockDriveEntry {
 
     public void setTimeMillis(long timeMillis) {
         this.timeMillis = timeMillis;
+    }
+
+    public long getNumPoints() {
+        return numPoints;
+    }
+
+    public void setNumPoints(long numPoints) {
+        this.numPoints = numPoints;
     }
 }

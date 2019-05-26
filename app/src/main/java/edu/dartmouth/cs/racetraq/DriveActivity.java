@@ -91,7 +91,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     private double mDriveDistance = 0;
     private ArrayList<LatLng> mLocationList = new ArrayList<>();
     private String mDriveName = "MyDrive";
-    private int numDatapoints = 0;
+    private long numDatapoints = 0;
     private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
     private SimpleDateFormat durationFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US);
     private Location lastLocation;
@@ -409,10 +409,11 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         driveEntry.setDriveDistance(Double.toString(mDriveDistance*KM_TO_MILE));
         driveEntry.setDriveTimeStamp(dateTimeFormat.format(Long.parseLong(mDriveTimeStamp)));
         driveEntry.setDriveTopSpeed(Double.toString(mDriveTopSpeed));
-        driveEntry.setDriveDuration(millisToString(endTime- Long.parseLong(mDriveTimeStamp)));
+        driveEntry.setDriveDuration(millisToString(endTime - Long.parseLong(mDriveTimeStamp)));
         Gson gson = new Gson();
         String gps_trace = gson.toJson(mLocationList);
         driveEntry.setLocationList(gps_trace);
+        driveEntry.setNumPoints(Long.toString(numDatapoints));
 
         // post drive to firebase
         addFirebaseSummary(driveEntry);

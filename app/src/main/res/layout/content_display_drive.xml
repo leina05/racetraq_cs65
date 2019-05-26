@@ -16,13 +16,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
->
+        xmlns:ap="http://schemas.android.com/apk/res-auto"
+
+        >
 
         <TextView
             android:id="@+id/display_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="60dp"
+            android:layout_marginStart="30dp"
             android:layout_marginTop="12dp"
             android:text="Date"
             android:textSize="16dp" />
@@ -41,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/display_date"
-            android:layout_marginStart="60dp"
+            android:layout_marginStart="30dp"
             android:layout_marginTop="8dp"
             android:text="Distance"
             android:textSize="16dp" />
@@ -61,7 +63,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/display_distance"
-            android:layout_marginStart="60dp"
+            android:layout_marginStart="30dp"
             android:layout_marginTop="8dp"
             android:text="Avg Speed"
             android:textSize="16dp" />
@@ -107,19 +109,25 @@
             android:id="@+id/display_graph_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/display_map"
             android:layout_marginStart="12dp"
             android:layout_marginTop="12dp"
-            android:text="Data"
+            android:text="Drive Data"
             android:textColor="@android:color/black"
-            android:textSize="20dp" />
+            android:textSize="20dp"
+            android:layout_below="@id/display_map"/>
 
-        <ImageView
-            android:id="@+id/display_graph"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/display_map"
-            app:srcCompat="@drawable/graph" />
+        <com.androidplot.xy.XYPlot
+            style="@style/APDefacto.Light"
+            android:id="@+id/speed_plot"
+            android:layout_width="fill_parent"
+            android:layout_height="400dp"
+            android:layout_below="@id/display_graph_title"
+            android:layout_marginTop="12dp"
+            ap:rangeTitle="Speed (mph), Temp (C)"
+            ap:domainTitle="Time (s)"
+            ap:lineLabels="left|bottom"
+            ap:lineLabelRotationBottom="-45" />
+
 
     </RelativeLayout>
 </ScrollView>

@@ -15,6 +15,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import com.androidplot.xy.XYPlot;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -33,6 +34,11 @@ import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 
 public class HistoryActivity extends AppCompatActivity {
 
+    public static final String DRIVE_ENTRY_ID_KEY = "drive_entry_id";
+    public static final String DRIVE_NAME_KEY = "drive_name_key";
+    public static final String NUM_POINTS_KEY = "num_points_key";
+
+
     // UI
     private RecyclerView.Adapter mAdapter;
     private List<MockDriveEntry> driveEntryList = new ArrayList<>();
@@ -44,6 +50,7 @@ public class HistoryActivity extends AppCompatActivity {
     private FirebaseUser mUser;
     private String mUserID;
     private String userEmail;
+    private String driveId;
 
 
     @Override
@@ -58,11 +65,12 @@ public class HistoryActivity extends AppCompatActivity {
         mDatabase = FirebaseDatabase.getInstance();
         mRef = mDatabase.getReference();
         mUser = mAuth.getCurrentUser();
+
         if (mUser != null)
         {
-            mUserID = mUser.getUid();
             userEmail = mUser.getEmail();
-            mRef.child("user_"+DriveActivity.EmailHash(userEmail)).child("drive_entries").addChildEventListener(driveEntryListener);
+            mUserID = "user_"+DriveActivity.EmailHash(userEmail);
+            mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 
 
@@ -84,34 +92,6 @@ public class HistoryActivity extends AppCompatActivity {
         }
         setTitle("Saved Drives");
 
-        /* Initialize Drive Entries */
-//        MockDriveEntry entry = new MockDriveEntry();
-//        entry.setName("Evening Drive");
-//        entry.setDateTime("May 15, 2019 at 2:30 PM");
-//        entry.setDistance(18.7);
-//        entry.setDuration("1 hour 23 min");
-//        entry.setTopSpeed(87.8);
-//        entry.setMap_thumbnail(BitmapFactory.decodeResource(getResources(), R.drawable.dartmouth_map));
-//        driveEntryList.add(entry);
-//
-//        entry = new MockDriveEntry();
-//        entry.setName("Evening Drive");
-//        entry.setDateTime("May 15, 2019 at 2:30 PM");
-//        entry.setDistance(18.7);
-//        entry.setDuration("1 hour 23 min");
-//        entry.setTopSpeed(87.8);
-//        entry.setMap_thumbnail(BitmapFactory.decodeResource(getResources(), R.drawable.dartmouth_map));
-//        driveEntryList.add(entry);
-//
-//        entry = new MockDriveEntry();
-//        entry.setName("Evening Drive");
-//        entry.setDateTime("May 15, 2019 at 2:30 PM");
-//        entry.setDistance(18.7);
-//        entry.setDuration("1 hour 23 min");
-//        entry.setTopSpeed(87.8);
-//        entry.setMap_thumbnail(BitmapFactory.decodeResource(getResources(), R.drawable.dartmouth_map));
-//        driveEntryList.add(entry);
-
         /* Set up recycler view */
         RecyclerView recyclerView = findViewById(R.id.history_view);
         recyclerView.setHasFixedSize(true);
@@ -131,10 +111,16 @@ public class HistoryActivity extends AppCompatActivity {
             @Override
             public void onClick(View view, int position) {
                 Intent intent = new Intent(HistoryActivity.this, DisplayDriveActivity.class);
+                MockDriveEntry entry = driveEntryList.get(position);
+                String id = Long.toString(entry.getTimeMillis());
+                intent.putExtra(DRIVE_ENTRY_ID_KEY, id);
+                intent.putExtra(DRIVE_NAME_KEY, entry.getName());
+                intent.putExtra(NUM_POINTS_KEY, entry.getNumPoints());
                 startActivity(intent);
 
             }
         }));
+
 
     }
 
@@ -183,8 +169,12 @@ public class HistoryActivity extends AppCompatActivity {
         entry.setDriveTimeStamp((String) ds.child("summary").child("driveTimeStamp").getValue());
         entry.setDriveTopSpeed((String) ds.child("summary").child("driveTopSpeed").getValue());
         entry.setLocationList((String) ds.child("summary").child("locationList").getValue());
+        entry.setNumPoints((String) ds.child("summary").child("numPoints").getValue());
 
-        return new MockDriveEntry(entry, this);
+        MockDriveEntry finalEntry = new MockDriveEntry(entry, this);
+        finalEntry.setTimeMillis(Long.parseLong(ds.getKey()));
+
+        return finalEntry;
     }
 
 }
