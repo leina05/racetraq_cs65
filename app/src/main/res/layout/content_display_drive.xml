@@ -126,8 +126,7 @@
             ap:rangeTitle="Speed (mph), Temp (C)"
             ap:domainTitle="Time (s)"
             ap:lineLabels="left|bottom"
-            ap:lineLabelRotationBottom="-45" />
-
+            ap:lineLabelRotationBottom="-45"/>
 
     </RelativeLayout>
 </ScrollView>
