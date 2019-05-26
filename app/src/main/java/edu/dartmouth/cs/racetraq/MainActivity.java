@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -41,12 +42,12 @@ public class MainActivity extends AppCompatActivity
     private Button mNewDriveButton;
     private Button mBLEConnectButton;
     private TextView mConnectionStatusTextView;
-    private AlertDialog mStatusDialog;
+    private AlertDialog alertDialog;
 
     // BLE
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
-    private ArrayList<BluetoothDevice> connectedDevices;
+    private BluetoothDevice connectedDevice;
     private boolean deviceConnected = false;
 
     // Service Connection
@@ -89,8 +90,16 @@ public class MainActivity extends AppCompatActivity
         mNewDriveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, DriveActivity.class);
-                startActivity(intent);
+                if (!deviceConnected)
+                {
+                    showStatusDialog(true, R.string.not_connected);
+                }
+                else
+                {
+                    Intent intent = new Intent(MainActivity.this, DriveActivity.class);
+                    startActivity(intent);
+                }
+
             }
         });
 
@@ -225,10 +234,11 @@ public class MainActivity extends AppCompatActivity
      */
     private void updateUI() {
 
-        connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+        ArrayList<BluetoothDevice> connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
         if (connectedDevices != null && !connectedDevices.isEmpty())
         {
             deviceConnected = true;
+            connectedDevice = connectedDevices.get(0);
         }
         else
         {
@@ -239,12 +249,44 @@ public class MainActivity extends AppCompatActivity
         {
             mBLEConnectButton.setText("Disconnect");
             String deviceName = connectedDevices.get(0).getName();
-            mConnectionStatusTextView.setText(String.format("Connected to: %s", deviceName == null ? connectedDevices.get(0).getAddress() : deviceName));
+            mConnectionStatusTextView.setText(String.format("Connected to: %s", deviceName == null ? connectedDevice.getAddress() : deviceName));
         }
         else
         {
             mBLEConnectButton.setText("Connect");
             mConnectionStatusTextView.setText("No device connected.");
+        }
+    }
+
+    private void showStatusDialog(boolean show, int stringId) {
+        if (show) {
+
+            // Remove if a previous dialog was open (maybe because was clicked 2 times really quick)
+            if (alertDialog != null) {
+                alertDialog.cancel();
+            }
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(stringId);
+
+            if (stringId == R.string.not_connected)
+            {
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        alertDialog.cancel();
+                    }
+                });
+            }
+
+            // Show dialog
+            alertDialog = builder.create();
+            alertDialog.setCanceledOnTouchOutside(false);
+            alertDialog.show();
+        } else {
+            if (alertDialog != null) {
+                alertDialog.cancel();
+            }
         }
     }
 

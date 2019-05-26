@@ -1,10 +1,12 @@
 package edu.dartmouth.cs.racetraq;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -82,6 +84,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     private Chronometer mChronometer;
     private TextView engTempTextView;
     private TextView battVoltTextView;
+
 
     // Drive Data
     private DriveDatapoint driveDatapoint;
@@ -359,10 +362,9 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
                 }
             }
 
-
-
         }
     }
+
 
     private void packageData(String data) {
         String [] arr = data.split(",");

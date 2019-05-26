@@ -276,6 +276,10 @@ public class BluetoothLeService extends Service {
         Log.i(TAG, "Attempting to start service discovery:" + bluetoothGatt.discoverServices());
     }
 
+    public boolean isConnected() {
+        return connectionState == STATE_CONNECTED;
+    }
+
     public class LocalBinder extends Binder {
         public BluetoothLeService getService() {
             return BluetoothLeService.this;

@@ -22,6 +22,12 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYGraphWidget;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -37,7 +43,7 @@ import java.util.ArrayList;
 
 import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 
-public class DisplayDriveActivity extends AppCompatActivity {
+public class DisplayDriveActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     // Drive entry data
     private MockDriveEntry driveEntry;
@@ -59,8 +65,12 @@ public class DisplayDriveActivity extends AppCompatActivity {
 
     // UI
     private XYPlot plot;
-
     private Intent launch_intent;
+
+    // Map
+    private GoogleMap mMap;
+
+
 
 
 
@@ -118,6 +128,11 @@ public class DisplayDriveActivity extends AppCompatActivity {
         {
             timeList.add(i*0.2);
         }
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.display_map);
+        mapFragment.getMapAsync(this);
 
 
     }
@@ -225,4 +240,13 @@ public class DisplayDriveActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Add a marker in Sydney and move the camera
+        LatLng sydney = new LatLng(-34, 151);
+        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
 }

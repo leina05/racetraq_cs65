@@ -55,6 +55,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
     public static final String UUID_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     public static final String DEVICE_ADDRESS_KEY = "device_address";
+    private static final long CONNECT_TIMEOUT = 15000;
 
 
     // BLE
@@ -413,6 +414,18 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             if (mBluetoothLeService != null)
             {
                 mBluetoothLeService.connect(device.getAddress());
+
+                // Stops scanning after a pre-defined scan period.
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!mBluetoothLeService.isConnected())
+                        {
+                            mBluetoothLeService.disconnect();
+                            showStatusDialog(true, R.string.connect_timeout);
+                        }
+                    }
+                }, CONNECT_TIMEOUT);
             }
 ;
 
@@ -459,6 +472,16 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         finish();
+                    }
+                });
+            }
+
+            if (stringId == R.string.connect_timeout)
+            {
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mConnectingDialog.cancel();
                     }
                 });
             }

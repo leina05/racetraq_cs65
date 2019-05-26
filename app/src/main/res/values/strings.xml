@@ -39,4 +39,7 @@
     <string name="error_password_invalid">Password must be at least 6 characters long</string>
     <string name="error_email_invalid">This email address is invalid</string>
     <string name="drive_name">Drive Name</string>
+    <string name="no_data_service">No data service found.</string>
+    <string name="not_connected">Please connect device before beginning a drive.</string>
+    <string name="connect_timeout">Connection timeout</string>
 </resources>
