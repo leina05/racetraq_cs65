@@ -23,7 +23,6 @@ import edu.dartmouth.cs.racetraq.R;
 
 public class DashboardFragment extends Fragment {
 
-    private static final String CHRONO_BASE_KEY = "chronometer_base";
     Context mActivity;
     private long startTime;
 

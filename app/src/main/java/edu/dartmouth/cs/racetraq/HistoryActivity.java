@@ -121,7 +121,6 @@ public class HistoryActivity extends AppCompatActivity {
             }
         }));
 
-
     }
 
     /**
@@ -131,10 +130,18 @@ public class HistoryActivity extends AppCompatActivity {
 
         @Override
         public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-            MockDriveEntry entry = snapshotToDriveEntry(dataSnapshot);
-            driveEntryList.add(entry);
+            // if no summary, delete entry
+            if (dataSnapshot.child("summary").getValue() == null)
+            {
+                dataSnapshot.getRef().removeValue();
+            }
+            else
+            {
+                MockDriveEntry entry = snapshotToDriveEntry(dataSnapshot);
+                driveEntryList.add(entry);
 
-            mAdapter.notifyDataSetChanged();
+                mAdapter.notifyDataSetChanged();
+            }
         }
 
         @Override

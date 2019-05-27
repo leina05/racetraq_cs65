@@ -5,7 +5,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -20,9 +23,13 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import edu.dartmouth.cs.racetraq.R;
 import edu.dartmouth.cs.racetraq.Services.TrackingService;
@@ -39,6 +46,10 @@ public class LiveMapFragment extends Fragment {
     MapView mMapView;
     private GoogleMap googleMap;
 
+    private Marker startMarker = null;
+    private Marker pathMarker = null;
+    private Polyline path;
+    private PolylineOptions pathOptions;
 
     public LiveMapFragment() {
         // Required empty public constructor
@@ -91,7 +102,6 @@ public class LiveMapFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         mActivity = context;
-
     }
 
     @Override
@@ -138,9 +148,50 @@ public class LiveMapFragment extends Fragment {
             return false;
     }
 
-    void setupMap()
+    private void setupMap()
     {
 
     }
+
+    /** PUBLIC METHODS **/
+
+    public void updateDisplay(Location location) {
+
+        if (location != null) {
+            // Update the map location
+            LatLng latlng = new LatLng(location.getLatitude(), location.getLongitude());
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 17));
+
+            // add startMarker if needed
+            if (startMarker == null)
+            {
+                startMarker = googleMap.addMarker(new MarkerOptions().position(latlng).icon(BitmapDescriptorFactory.defaultMarker(
+                        BitmapDescriptorFactory.HUE_GREEN)));
+
+                pathOptions = new PolylineOptions().add(latlng);
+                pathOptions.color(Color.BLACK);
+
+            }
+            else
+            {
+                // update pathMarker
+                if (pathMarker == null)
+                    pathMarker = googleMap.addMarker(new MarkerOptions().position(latlng).icon(BitmapDescriptorFactory.defaultMarker(
+                            BitmapDescriptorFactory.HUE_RED)));
+                else
+                    pathMarker.setPosition(latlng);
+
+                // update path
+                if (path != null)
+                    path.remove();
+
+                pathOptions.add(latlng);
+                path = googleMap.addPolyline(pathOptions);
+
+                // update entry parameters
+            }
+        }
+    }
+
 
 }

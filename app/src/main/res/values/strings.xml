@@ -49,4 +49,5 @@
     <string name="dash">Dash</string>
     <string name="map">Map</string>
     <string name="plot">Plot</string>
+    <string name="end_drive">End Drive</string>
 </resources>
