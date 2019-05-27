@@ -17,4 +17,10 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="BottomNavigationTheme" parent="Theme.AppCompat.Light">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="android:textColorSecondary">@android:color/tertiary_text_dark</item>
+        <item name="android:background">@android:color/background_light</item>
+    </style>
+
 </resources>

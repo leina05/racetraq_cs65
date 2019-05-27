@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 else
                 {
-                    Intent intent = new Intent(MainActivity.this, DriveActivity.class);
+                    Intent intent = new Intent(MainActivity.this, NewDriveActivity.class);
                     startActivity(intent);
                 }
 

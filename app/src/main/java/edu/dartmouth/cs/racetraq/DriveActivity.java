@@ -1,12 +1,10 @@
 package edu.dartmouth.cs.racetraq;
 
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -203,9 +201,6 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         bindService(trackingIntent, trackingConnection, Context.BIND_AUTO_CREATE);
         isBoundTracking = true;
 
-
-
-
     }
 
     @Override
@@ -303,7 +298,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
                     ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the
                 // user interface.
-                displayGattServices(mBluetoothLeService.getSupportedGattServices());
+                findGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
                 packageData(data);
@@ -331,7 +326,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
         }
     }
 
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
+    private void findGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
         String uuid = null;
 
@@ -505,7 +500,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     }
 
     /**
-     * Save function for all dialogs other than date and time
+     * Save function for all dialogs
      */
     public void saveDialogEntry(int title_id, String data)
     {
