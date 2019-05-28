@@ -18,6 +18,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -51,6 +52,7 @@ import edu.dartmouth.cs.racetraq.Services.TrackingService;
 
 public class NewDriveActivity extends AppCompatActivity implements ServiceConnection {
 
+    private static final String TAG = "NewDriveActivity";
     // UI
     private ViewPager viewPager;
     private DashboardFragment dashFragment;
@@ -412,6 +414,8 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
 
     private void addFirebaseDatapoint(DriveDatapoint datapoint) {
 
+        Log.d(TAG, "addFirebaseDatapoint");
+
         mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
                 .child("drive_entries").child(mDriveTimeStamp).child("datapoints").push().setValue(datapoint)
                 .addOnCompleteListener(this, new OnCompleteListener<Void>() {
@@ -550,4 +554,5 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
     public long getStartTime() {
         return Long.parseLong(mDriveTimeStamp);
     }
+
 }

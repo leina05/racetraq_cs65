@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    xmlns:ap="http://schemas.android.com/apk/res-auto">
+    xmlns:ap="http://schemas.android.com/apk/res-auto"
+    tools:context=".NewDriveActivity">
 
     <TextView
         android:id="@+id/live_graph_title"
