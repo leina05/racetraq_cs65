@@ -90,7 +90,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         if (mUser != null) {
             userEmail = mUser.getEmail();
-            mUserID = "user_" + DriveActivity.EmailHash(userEmail);
+            mUserID = "user_" + NewDriveActivity.EmailHash(userEmail);
             mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 

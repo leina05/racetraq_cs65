@@ -2,7 +2,6 @@ package edu.dartmouth.cs.racetraq.Services;
 
         import android.Manifest;
         import android.app.Notification;
-        import android.app.NotificationChannel;
         import android.app.NotificationManager;
         import android.app.PendingIntent;
         import android.app.Service;
@@ -13,22 +12,12 @@ package edu.dartmouth.cs.racetraq.Services;
         import android.location.Location;
         import android.location.LocationListener;
         import android.location.LocationManager;
-        import android.os.Build;
         import android.os.Bundle;
         import android.os.IBinder;
-        import android.support.annotation.NonNull;
         import android.support.annotation.Nullable;
         import android.support.v4.app.ActivityCompat;
-        import android.support.v4.app.NotificationCompat;
-        import android.util.Log;
 
-        import com.google.android.gms.tasks.OnFailureListener;
-        import com.google.android.gms.tasks.OnSuccessListener;
-        import com.google.android.gms.tasks.Task;
-
-        import edu.dartmouth.cs.racetraq.DriveActivity;
-        import edu.dartmouth.cs.racetraq.MainActivity;
-        import edu.dartmouth.cs.racetraq.R;
+        import edu.dartmouth.cs.racetraq.NewDriveActivity;
 
 public class TrackingService extends Service {
     private static final String CHANNEL_ID = "notification_channel";
@@ -156,8 +145,8 @@ public class TrackingService extends Service {
     private void broadcastLocation(Location location)
     {
         Intent locationIntent = new Intent();
-        locationIntent.setAction(DriveActivity.LOCATION_RECEIVE_ACTION);
-        locationIntent.putExtra(DriveActivity.LOCATION_KEY, location);
+        locationIntent.setAction(NewDriveActivity.LOCATION_RECEIVE_ACTION);
+        locationIntent.putExtra(NewDriveActivity.LOCATION_KEY, location);
 
         sendBroadcast(locationIntent);
     }

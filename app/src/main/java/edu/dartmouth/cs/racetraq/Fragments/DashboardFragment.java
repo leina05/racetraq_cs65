@@ -1,7 +1,6 @@
 package edu.dartmouth.cs.racetraq.Fragments;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
@@ -15,7 +14,6 @@ import android.widget.TextView;
 
 import java.util.Objects;
 
-import edu.dartmouth.cs.racetraq.DriveActivity;
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
 import edu.dartmouth.cs.racetraq.NewDriveActivity;
 import edu.dartmouth.cs.racetraq.R;

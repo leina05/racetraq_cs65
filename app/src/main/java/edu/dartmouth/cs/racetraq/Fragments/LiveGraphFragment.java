@@ -2,9 +2,6 @@ package edu.dartmouth.cs.racetraq.Fragments;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.DashPathEffect;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,16 +11,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.androidplot.Plot;
-import com.androidplot.PlotListener;
-import com.androidplot.util.PixelUtils;
 import com.androidplot.util.Redrawer;
 import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.CatmullRomInterpolator;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYSeries;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -33,10 +25,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
-import edu.dartmouth.cs.racetraq.DriveActivity;
-import edu.dartmouth.cs.racetraq.HistoryActivity;
 import edu.dartmouth.cs.racetraq.NewDriveActivity;
 import edu.dartmouth.cs.racetraq.R;
 
@@ -94,7 +83,7 @@ public class LiveGraphFragment extends Fragment {
         if (mUser != null)
         {
             userEmail = mUser.getEmail();
-            mUserID = "user_"+ DriveActivity.EmailHash(userEmail);
+            mUserID = "user_"+ NewDriveActivity.EmailHash(userEmail);
             mRef.child(mUserID).child("drive_entries").child(entryId).child("datapoints").addChildEventListener(datapointListener);
         }
     }

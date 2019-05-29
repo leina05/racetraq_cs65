@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity
             if (mUser != null)
             {
                 userEmail = mUser.getEmail();
-                mUserID = "user_"+DriveActivity.EmailHash(userEmail);
+                mUserID = "user_"+NewDriveActivity.EmailHash(userEmail);
                 mRef.child(mUserID).child("home_stats").addChildEventListener(homeStatsListener);
             }
         }

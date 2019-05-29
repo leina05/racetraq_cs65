@@ -179,7 +179,7 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
 
         if (mUser != null)
         {
-            mUserId = "user_"+DriveActivity.EmailHash(mUser.getEmail());
+            mUserId = "user_"+NewDriveActivity.EmailHash(mUser.getEmail());
             mDatabase.child(mUserId).child("home_stats").addChildEventListener(homeStatsListener);
         }
 
