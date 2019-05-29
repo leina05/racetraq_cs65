@@ -279,7 +279,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
                 timeList, speedList, "Speed");
 
         XYSeries engTempSeries = new SimpleXYSeries(
-                timeList, engTempList, "Engine Temp");
+                timeList, engTempList, "Temp");
 
         // create formatters to use for drawing a series using LineAndPointRenderer
         // and configure them from xml:
@@ -331,7 +331,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     {
         dateTextView.setText((String) ds.child("driveTimeStamp").getValue());
         nameTextView.setText(driveName);
-        distanceTextView.setText((String) ds.child("driveDistance").getValue() + " miles");
+        distanceTextView.setText(String.format("%.2f miles", Double.parseDouble((String) ds.child("driveDistance").getValue())));
         durationTextView.setText((String) ds.child("driveDuration").getValue());
         avgSpeedTextView .setText(String.format("%.2f mph", Double.parseDouble((String) ds.child("driveAvgSpeed").getValue())));
         topSpeedTextView.setText(String.format(String.format("%.2f mph", Double.parseDouble((String) ds.child("driveTopSpeed").getValue()))));

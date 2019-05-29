@@ -2,7 +2,7 @@
     <string name="app_name">RaceTraq</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_title">RaceTraq</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
@@ -10,11 +10,11 @@
     <string name="connect_button_name">CONNECT</string>
     <string name="new_drive_button_name">New Drive</string>
     <string name="starting_saved_drives">0</string>
-    <string name="saved_drives_title">Saved Drives:</string>
+    <string name="saved_drives_title">SAVED DRIVES</string>
     <string name="initial_connection_status">No device connected</string>
-    <string name="miles_driven_title">Miles Driven:</string>
+    <string name="miles_driven_title">MILES DRIVEN</string>
     <string name="initial_miles_driven">0</string>
-    <string name="top_speed_title">Top Speed:</string>
+    <string name="top_speed_title">TOP SPEED</string>
     <string name="init_top_speed">0</string>
 
     <string name="lap">Lap</string>

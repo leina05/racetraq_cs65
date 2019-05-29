@@ -506,7 +506,7 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
                             // finished inserting
-                            Toast.makeText(NewDriveActivity.this, "Drive Saved.", Toast.LENGTH_LONG).show();
+//                            Toast.makeText(NewDriveActivity.this, "Drive Saved.", Toast.LENGTH_LONG).show();
                             finish();
                         } else {
                             // insertion failed

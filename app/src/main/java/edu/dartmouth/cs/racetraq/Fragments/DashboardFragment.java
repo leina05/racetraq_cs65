@@ -105,10 +105,10 @@ public class DashboardFragment extends Fragment {
 
     public void displayData(DriveDatapoint datapoint) {
         tpsTextView.setText(datapoint.getTps());
-        engRpmTextView.setText(datapoint.getEng_rpm());
-        speedTextView.setText(datapoint.getSpeed());
-        engTempTextView.setText(datapoint.getEng_temp());
-        battVoltTextView.setText(datapoint.getBatt_voltage());
+        engRpmTextView.setText(datapoint.getEng_rpm() + " RPM");
+        speedTextView.setText(datapoint.getSpeed() + " mph");
+        engTempTextView.setText(datapoint.getEng_temp() + " °C");
+        battVoltTextView.setText(datapoint.getBatt_voltage() + " V");
     }
 
     public void startTime() {
