@@ -29,6 +29,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class HistoryActivity extends AppCompatActivity {
     public static final String DRIVE_ENTRY_ID_KEY = "drive_entry_id";
     public static final String DRIVE_NAME_KEY = "drive_name_key";
     public static final String NUM_POINTS_KEY = "num_points_key";
+    public static final String BYTE_ARRAY_KEY = "byte_array_key";
     private static final long LOADING_TIMEOUT = 10000;  // timeout loading after 10 seconds
     private static final long ONE_MEGABYTE = 1024 * 1024;
 
@@ -63,6 +65,7 @@ public class HistoryActivity extends AppCompatActivity {
     private String driveId;
     private FirebaseStorage storage;
     private StorageReference storageReference;
+    private boolean paused = false;
 
     // Drive Data
     private int savedDrives;
@@ -88,7 +91,7 @@ public class HistoryActivity extends AppCompatActivity {
         if (mUser != null) {
             userEmail = mUser.getEmail();
             mUserID = "user_" + DriveActivity.EmailHash(userEmail);
-//            mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
+            mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 
         // Get Intent Extras
@@ -129,6 +132,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         /* Set OnClickListener for Exercise items */
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
+
             @Override
             public void onClick(View view, int position) {
                 Intent intent = new Intent(HistoryActivity.this, DisplayDriveActivity.class);
@@ -137,6 +141,13 @@ public class HistoryActivity extends AppCompatActivity {
                 intent.putExtra(DRIVE_ENTRY_ID_KEY, id);
                 intent.putExtra(DRIVE_NAME_KEY, entry.getName());
                 intent.putExtra(NUM_POINTS_KEY, entry.getNumPoints());
+
+                // Get bitmap as byte array
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                entry.getMap_thumbnail().compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+                intent.putExtra(BYTE_ARRAY_KEY, byteArray);
+
                 startActivity(intent);
 
             }
@@ -169,14 +180,16 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        mRef.child(mUserID).child("drive_entries").removeEventListener(driveEntryListener);
+        paused = true;
+//        mRef.child(mUserID).child("drive_entries").removeEventListener(driveEntryListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        driveEntryList.clear();
-        mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
+        paused = false;
+//        driveEntryList.clear();
+//        mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
     }
 
     /**
@@ -187,48 +200,19 @@ public class HistoryActivity extends AppCompatActivity {
         @Override
         public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
             // if no summary, delete entry
-            if (dataSnapshot.child("summary").getValue() == null) {
-                dataSnapshot.getRef().removeValue();
-            } else {
-                DriveEntry entry = snapshotToDriveEntry(dataSnapshot);
-                driveEntryList.add(entry);
+            if (!paused)
+            {
+                if (dataSnapshot.child("summary").getValue() == null) {
+                    dataSnapshot.getRef().removeValue();
+                } else {
+                    DriveEntry entry = snapshotToDriveEntry(dataSnapshot);
+                    driveEntryList.add(entry);
 
-                DownloadMapTask task = new DownloadMapTask();
-                task.execute(driveEntryList.size()-1);
-
-
-//                StorageReference mapRef = storageReference.child(mUserID).child("mapSnapshots/"+dataSnapshot.getKey()+".jpeg");
-//
-//                mapRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-//                    @Override
-//                    public void onSuccess(byte[] bytes) {
-//                        // Data for "images/island.jpg" is returns, use this as needed
-//                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-//                        int newHeight = (int) (0.857*bitmap.getWidth());
-//                        int y0 = (bitmap.getHeight()-newHeight)/2;
-//                        bitmap = Bitmap.createBitmap(bitmap, 0, y0, bitmap.getWidth(), newHeight);
-//                        driveEntryList.get(driveEntryList.size()-1).setMap_thumbnail(bitmap);
-//                        mAdapter.notifyDataSetChanged();
-//                    }
-//                }).addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception exception) {
-//                        // Handle any errors
-//                    }
-//                });
-
-
-//                mAdapter.notifyDataSetChanged();
-
-                // stop loading dialog once all drives have been loaded
-//                if (driveEntryList.size() == savedDrives) {
-//                    if (loadingDialog != null) {
-//                        loadingDialog.cancel();
-//                        handler.removeCallbacksAndMessages(null);
-//                    }
-//                    mAdapter.notifyDataSetChanged();
-//                }
+                    DownloadMapTask task = new DownloadMapTask();
+                    task.execute(driveEntryList.size()-1);
+                }
             }
+
         }
 
         @Override

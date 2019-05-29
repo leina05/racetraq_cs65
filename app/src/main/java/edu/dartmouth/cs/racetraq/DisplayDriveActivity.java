@@ -1,15 +1,20 @@
 package edu.dartmouth.cs.racetraq;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.DashPathEffect;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 
 import com.androidplot.util.PixelUtils;
 import com.androidplot.xy.BoundaryMode;
@@ -24,6 +29,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -31,6 +38,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 
@@ -38,6 +47,7 @@ import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 
 public class DisplayDriveActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    private static final String TAG = "DisplayDriveActivity";
     // Drive entry data
     private DriveEntry driveEntry;
     private String entryId;
@@ -46,6 +56,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     private ArrayList<Double> timeList;
     private String driveName;
     private long numPoints;
+    private Bitmap bitmap;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -55,16 +66,16 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     private String mUserID;
     private String userEmail;
     private int pointCount = 0;
+    private FirebaseStorage storage;
+    private StorageReference storageReference;
 
     // UI
     private XYPlot plot;
     private Intent launch_intent;
+    private ImageView mapImageView;
 
     // Map
     private GoogleMap mMap;
-
-
-
 
 
     @Override
@@ -76,6 +87,9 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
 
         launch_intent = getIntent();
 
+        byte[] byteArrayExtra = launch_intent.getByteArrayExtra(HistoryActivity.BYTE_ARRAY_KEY);
+        bitmap = BitmapFactory.decodeByteArray(byteArrayExtra, 0, byteArrayExtra.length);
+
         // Firebase init
 
         mAuth = FirebaseAuth.getInstance();
@@ -83,19 +97,20 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         mRef = mDatabase.getReference();
         mUser = mAuth.getCurrentUser();
         entryId = launch_intent.getStringExtra(HistoryActivity.DRIVE_ENTRY_ID_KEY);
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
 
-        if (mUser != null)
-        {
+
+        if (mUser != null) {
             userEmail = mUser.getEmail();
-            mUserID = "user_"+DriveActivity.EmailHash(userEmail);
+            mUserID = "user_" + DriveActivity.EmailHash(userEmail);
             mRef.child(mUserID).child("drive_entries").child(entryId).child("datapoints").addChildEventListener(datapointListener);
         }
 
         // UI
 
         /* Set Back Button */
-        if (getSupportActionBar() != null)
-        {
+        if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
             getSupportActionBar().setDisplayShowHomeEnabled(true);
@@ -108,6 +123,9 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
             });
         }
 
+        mapImageView = findViewById(R.id.map_snapshot);
+        mapImageView.setImageBitmap(bitmap);
+
         driveName = launch_intent.getStringExtra(HistoryActivity.DRIVE_NAME_KEY);
         setTitle(driveName);
 
@@ -117,15 +135,14 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         plot = findViewById(R.id.speed_plot);
 
         timeList = new ArrayList<>();
-        for (int i = 0; i < numPoints; i++)
-        {
-            timeList.add(i*0.2);
+        for (int i = 0; i < numPoints; i++) {
+            timeList.add(i * 0.2);
         }
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.display_map);
-        mapFragment.getMapAsync(this);
+//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+//                .findFragmentById(R.id.display_map);
+//        mapFragment.getMapAsync(this);
 
 
     }
@@ -140,9 +157,14 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.delete_drive_action)
-        {
+        if (id == R.id.delete_drive_action) {
+            // delete entry from Firebase database
             mRef.child(mUserID).child("drive_entries").child(entryId).removeValue();
+
+            // delete map image from Firebase storage
+            DeleteMapTask task = new DeleteMapTask();
+            task.execute();
+
             finish();
         }
         return super.onOptionsItemSelected(item);
@@ -158,22 +180,19 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
             String speedString = (String) dataSnapshot.child("speed").getValue();
             String engTempString = (String) dataSnapshot.child("eng_temp").getValue();
 
-            if (speedList == null)
-            {
+            if (speedList == null) {
                 speedList = new ArrayList<>();
             }
             speedList.add(Double.parseDouble(speedString));
 
-            if (engTempList == null)
-            {
+            if (engTempList == null) {
                 engTempList = new ArrayList<>();
             }
             engTempList.add(Integer.parseInt(engTempString));
 
             pointCount++;
 
-            if (pointCount == numPoints)
-            {
+            if (pointCount == numPoints) {
                 createPlot();
                 plot.redraw();
             }
@@ -219,11 +238,11 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
                 new LineAndPointFormatter(this, R.xml.line_point_formatter_with_labels_2);
 
         // add an "dash" effect to the series2 line:
-        engTempSeriesFormat.getLinePaint().setPathEffect(new DashPathEffect(new float[] {
+        engTempSeriesFormat.getLinePaint().setPathEffect(new DashPathEffect(new float[]{
 
-        // always use DP when specifying pixel sizes, to keep things consistent across devices:
-        PixelUtils.dpToPix(20),
-        PixelUtils.dpToPix(15)}, 0));
+                // always use DP when specifying pixel sizes, to keep things consistent across devices:
+                PixelUtils.dpToPix(20),
+                PixelUtils.dpToPix(15)}, 0));
 
         // just for fun, add some smoothing to the lines:
         // see: http://androidplot.com/smooth-curves-and-androidplot/
@@ -260,5 +279,37 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    /**
+     * ASYNC TASKS
+     **/
+
+    class DeleteMapTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            // Create a reference to the file to delete
+            StorageReference mapRef = storageReference.child(mUserID).child("mapSnapshots/" + entryId + ".jpeg");
+
+            // Delete the file
+            mapRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+                    // File deleted successfully
+                    Log.d(TAG, "Deleted map storage file");
+//                    finish();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    // Uh-oh, an error occurred!
+                    Log.d(TAG, "Failed to delete map storage file");
+//                    finish();
+                }
+            });
+
+            return null;
+        }
     }
 }

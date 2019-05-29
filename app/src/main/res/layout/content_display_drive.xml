@@ -88,13 +88,20 @@
             android:textColor="@android:color/black"
             android:textSize="20dp" />
 
-        <fragment
-            android:id="@+id/display_map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
+        <!--<fragment-->
+            <!--android:id="@+id/display_map"-->
+            <!--android:name="com.google.android.gms.maps.SupportMapFragment"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="250dp"-->
+            <!--android:layout_below="@id/display_map_title"-->
+            <!--tools:context=".DisplayDriveActivity" />-->
+
+        <ImageView
+            android:id="@+id/map_snapshot"
             android:layout_width="match_parent"
-            android:layout_height="250dp"
+            android:layout_height="wrap_content"
             android:layout_below="@id/display_map_title"
-            tools:context=".DisplayDriveActivity" />
+            />
 
         <TextView
             android:id="@+id/display_graph_title"
@@ -105,7 +112,7 @@
             android:text="Drive Data"
             android:textColor="@android:color/black"
             android:textSize="20dp"
-            android:layout_below="@id/display_map"/>
+            android:layout_below="@id/map_snapshot"/>
 
         <com.androidplot.xy.XYPlot
             style="@style/APDefacto.Light"

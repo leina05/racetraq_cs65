@@ -16,8 +16,7 @@
         android:layout_marginTop="12dp"
         android:text="Drive Data"
         android:textColor="@android:color/black"
-        android:textSize="20dp"
-        android:layout_below="@id/display_map"/>
+        android:textSize="20dp"/>
 
     <com.androidplot.xy.XYPlot
         style="@style/APDefacto.Light"
