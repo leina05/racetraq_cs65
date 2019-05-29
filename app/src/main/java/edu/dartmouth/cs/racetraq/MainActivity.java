@@ -376,17 +376,6 @@ public class MainActivity extends AppCompatActivity
      */
     private void updateUI() {
 
-//        ArrayList<BluetoothDevice> connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
-//        if (connectedDevices != null && !connectedDevices.isEmpty())
-//        {
-//            deviceConnected = true;
-//            connectedDevice = connectedDevices.get(0);
-//        }
-//        else
-//        {
-//            deviceConnected = false;
-//        }
-
         if (deviceConnected)
         {
             mBLEConnectButton.setText("Disconnect");

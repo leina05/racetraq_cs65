@@ -15,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.androidplot.util.PixelUtils;
 import com.androidplot.xy.BoundaryMode;
@@ -44,6 +45,7 @@ import com.google.firebase.storage.StorageReference;
 import java.util.ArrayList;
 
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
+import edu.dartmouth.cs.racetraq.Models.DriveEntryFB;
 
 public class DisplayDriveActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -73,6 +75,13 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     private XYPlot plot;
     private Intent launch_intent;
     private ImageView mapImageView;
+    private TextView dateTextView;
+    private TextView nameTextView;
+    private TextView distanceTextView;
+    private TextView durationTextView;
+    private TextView avgSpeedTextView;
+    private TextView topSpeedTextView;
+
 
     // Map
     private GoogleMap mMap;
@@ -105,6 +114,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
             userEmail = mUser.getEmail();
             mUserID = "user_" + NewDriveActivity.EmailHash(userEmail);
             mRef.child(mUserID).child("drive_entries").child(entryId).child("datapoints").addChildEventListener(datapointListener);
+            mRef.child(mUserID).child("drive_entries").child(entryId).addChildEventListener(summaryListener);
         }
 
         // UI
@@ -127,7 +137,14 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         mapImageView.setImageBitmap(bitmap);
 
         driveName = launch_intent.getStringExtra(HistoryActivity.DRIVE_NAME_KEY);
-        setTitle(driveName);
+        setTitle("");
+
+        dateTextView = findViewById(R.id.display_date);
+        nameTextView = findViewById(R.id.display_name);
+        distanceTextView = findViewById(R.id.display_distance);
+        durationTextView = findViewById(R.id.display_duration);
+        avgSpeedTextView = findViewById(R.id.display_avg_speed);
+        topSpeedTextView = findViewById(R.id.display_top_speed);
 
         /* Set up plot */
         numPoints = launch_intent.getLongExtra(HistoryActivity.NUM_POINTS_KEY, 0);
@@ -171,7 +188,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
     }
 
     /**
-     * Event listener for changes in Firebase exercise entries
+     * Event listener for Drive datapoints stored in Firebase
      */
     ChildEventListener datapointListener = new ChildEventListener() {
 
@@ -197,6 +214,41 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
                 plot.redraw();
             }
 
+        }
+
+        @Override
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+        }
+    };
+
+
+    /**
+     * Event listener for Drive summary
+     */
+    ChildEventListener summaryListener = new ChildEventListener() {
+
+        @Override
+        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            if (dataSnapshot.getKey().equals("summary"))
+            {
+                updateDriveSummary(dataSnapshot);
+            }
         }
 
         @Override
@@ -271,6 +323,18 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    /** PRIVATE FUNCTIONS **/
+
+    private void updateDriveSummary(DataSnapshot ds)
+    {
+        dateTextView.setText((String) ds.child("driveTimeStamp").getValue());
+        nameTextView.setText(driveName);
+        distanceTextView.setText((String) ds.child("driveDistance").getValue() + " miles");
+        durationTextView.setText((String) ds.child("driveDuration").getValue());
+        avgSpeedTextView .setText(String.format("%.2f mph", Double.parseDouble((String) ds.child("driveAvgSpeed").getValue())));
+        topSpeedTextView.setText(String.format(String.format("%.2f mph", Double.parseDouble((String) ds.child("driveTopSpeed").getValue()))));
     }
 
     /**
