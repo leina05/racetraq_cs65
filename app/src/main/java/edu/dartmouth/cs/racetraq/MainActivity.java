@@ -42,6 +42,10 @@ import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
 
+    public static final String SAVED_DRIVES_KEY = "saved_drives_key";
+    public static final String MILES_DRIVEN_KEY = "miles_driven_key";
+    public static final String TOP_SPEED_KEY = "top_speed_key";
+
     // Firebase
     private FirebaseAuth mAuth;
     private FirebaseDatabase mDatabase;
@@ -242,6 +246,18 @@ public class MainActivity extends AppCompatActivity
             // Handle the camera action
         } else if (id == R.id.saved_drives_drawer) {
             Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+            if (numDrivesTextView != null)
+            {
+                intent.putExtra(SAVED_DRIVES_KEY, Integer.parseInt(numDrivesTextView.getText().toString()));
+            }
+            if (milesDrivenTextView != null)
+            {
+                intent.putExtra(MILES_DRIVEN_KEY, Double.parseDouble(milesDrivenTextView.getText().toString()));
+            }
+            if (topSpeedTextView != null)
+            {
+                intent.putExtra(TOP_SPEED_KEY, Double.parseDouble(topSpeedTextView.getText().toString()));
+            }
             startActivity(intent);
         } else if (id == R.id.settings_drawer) {
 

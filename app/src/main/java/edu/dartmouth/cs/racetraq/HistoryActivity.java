@@ -1,10 +1,12 @@
 package edu.dartmouth.cs.racetraq;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -38,6 +40,7 @@ public class HistoryActivity extends AppCompatActivity {
     // UI
     private RecyclerView.Adapter mAdapter;
     private List<DriveEntry> driveEntryList = new ArrayList<>();
+    private AlertDialog loadingDialog;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -47,6 +50,9 @@ public class HistoryActivity extends AppCompatActivity {
     private String mUserID;
     private String userEmail;
     private String driveId;
+    private int savedDrives;
+    private double milesDriven;
+    private double topSpeed;
 
 
     @Override
@@ -69,6 +75,10 @@ public class HistoryActivity extends AppCompatActivity {
             mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 
+        // Get Intent Extras
+        savedDrives = getIntent().getIntExtra(MainActivity.SAVED_DRIVES_KEY, 0);
+        milesDriven = getIntent().getDoubleExtra(MainActivity.MILES_DRIVEN_KEY, 0);
+        topSpeed = getIntent().getDoubleExtra(MainActivity.TOP_SPEED_KEY, 0);
 
         // UI
 
@@ -117,6 +127,18 @@ public class HistoryActivity extends AppCompatActivity {
             }
         }));
 
+        if (savedDrives > 0)
+        {
+            // Loading dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Loading saved drives...");
+
+            loadingDialog = builder.create();
+            loadingDialog.setCanceledOnTouchOutside(false);
+            loadingDialog.show();
+        }
+
+
     }
 
     /**
@@ -137,6 +159,15 @@ public class HistoryActivity extends AppCompatActivity {
                 driveEntryList.add(entry);
 
                 mAdapter.notifyDataSetChanged();
+
+                // stop loading dialog once all drives have been loaded
+                if (driveEntryList.size() == savedDrives)
+                {
+                    if (loadingDialog != null)
+                    {
+                        loadingDialog.cancel();
+                    }
+                }
             }
         }
 
@@ -150,6 +181,7 @@ public class HistoryActivity extends AppCompatActivity {
             String timestamp = (String) dataSnapshot.child("summary").child("driveTimeStamp").getValue();
             HistoryActivity.DeleteDriveTask task = new HistoryActivity.DeleteDriveTask();
             task.execute(timestamp);
+
         }
 
         @Override
@@ -192,14 +224,38 @@ public class HistoryActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(String... strings) {
             String timestamp = strings[0];
+            double newTopSpeed = 0;
+            int delete = -1;
 
             for (int i =0; i<driveEntryList.size(); i++)
             {
                 if (driveEntryList.get(i).getDateTime().equals(timestamp))
                 {
-                    driveEntryList.remove(i);
+                    delete = i;
+                }
+                else if (driveEntryList.get(i).getTopSpeed() > newTopSpeed)
+                {
+                    newTopSpeed = driveEntryList.get(i).getTopSpeed();
                 }
             }
+
+            // delete entry;
+            if (delete >= 0)
+            {
+                driveEntryList.remove(delete);
+
+                // update home stats
+                savedDrives--;
+                topSpeed = newTopSpeed;
+                milesDriven -= driveEntryList.get(delete).getDistance();
+
+
+                mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
+                mRef.child(mUserID).child("home_stats").child("milesDriven").setValue(Double.toString(milesDriven));
+                mRef.child(mUserID).child("home_stats").child("topSpeed").setValue(Double.toString(topSpeed));
+            }
+
+
             return null;
         }
 
