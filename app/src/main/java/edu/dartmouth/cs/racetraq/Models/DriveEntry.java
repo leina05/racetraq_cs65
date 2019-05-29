@@ -1,83 +1,140 @@
 package edu.dartmouth.cs.racetraq.Models;
 
-import com.google.android.gms.maps.model.LatLng;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Locale;
+
+import edu.dartmouth.cs.racetraq.R;
 
 public class DriveEntry {
-    private String driveTimeStamp;
-    private String driveAvgSpeed;
-    private String driveTopSpeed;
-    private String driveDistance;
-    private String driveDuration;
-    private String locationList;
-    private String driveName;
-    private String numPoints;
+    private String name;
+    private String dateTime;
+    private long timeMillis;
+    private double distance;
+    private double topSpeed;
+    private double avgSpeed;
+    private String duration;
+    private ArrayList<LatLng> locationList;
+    private Bitmap map_thumbnail;
+    private long numPoints;
+
+    private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
+
+
 
     public DriveEntry() {
+
     }
 
-    public String getLocationList() {
+    public DriveEntry(DriveEntryFB driveEntryFB, Context context)
+    {
+        this.name = driveEntryFB.getDriveName();
+        this.dateTime = driveEntryFB.getDriveTimeStamp();
+        this.timeMillis = 0;
+
+        this.avgSpeed = Double.parseDouble(driveEntryFB.getDriveAvgSpeed());
+        this.topSpeed = Double.parseDouble(driveEntryFB.getDriveTopSpeed());
+        this.distance = Double.parseDouble(driveEntryFB.getDriveDistance());
+        this.duration = driveEntryFB.getDriveDuration();
+
+        Gson gson = new Gson();
+        Type collectionType = new TypeToken<ArrayList<LatLng>>(){}.getType();
+        this.locationList = gson.fromJson(driveEntryFB.getLocationList(), collectionType);
+
+        this.numPoints = Long.parseLong(driveEntryFB.getNumPoints());
+
+        // Set dummy bitmap for now
+        this.map_thumbnail = BitmapFactory.decodeResource(context.getResources(), R.drawable.dartmouth_map);
+
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(String dateTime) {
+        this.dateTime = dateTime;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
+    public double getTopSpeed() {
+        return topSpeed;
+    }
+
+    public void setTopSpeed(double topSpeed) {
+        this.topSpeed = topSpeed;
+    }
+
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+    public Bitmap getMap_thumbnail() {
+        return map_thumbnail;
+    }
+
+    public void setMap_thumbnail(Bitmap map_thumbnail) {
+        this.map_thumbnail = map_thumbnail;
+    }
+
+    public ArrayList<LatLng> getLocationList() {
         return locationList;
     }
 
-    public void setLocationList(String locationList) {
+    public void setLocationList(ArrayList<LatLng> locationList) {
         this.locationList = locationList;
     }
 
-    public String getDriveTimeStamp() {
-        return driveTimeStamp;
+    public double getAvgSpeed() {
+        return avgSpeed;
     }
 
-    public void setDriveTimeStamp(String driveTimeStamp) {
-        this.driveTimeStamp = driveTimeStamp;
+    public void setAvgSpeed(double avgSpeed) {
+        this.avgSpeed = avgSpeed;
     }
 
-    public String getDriveAvgSpeed() {
-        return driveAvgSpeed;
+    public long getTimeMillis() {
+        return timeMillis;
     }
 
-    public void setDriveAvgSpeed(String driveAvgSpeed) {
-        this.driveAvgSpeed = driveAvgSpeed;
+    public void setTimeMillis(long timeMillis) {
+        this.timeMillis = timeMillis;
     }
 
-    public String getDriveTopSpeed() {
-        return driveTopSpeed;
-    }
-
-    public void setDriveTopSpeed(String driveTopSpeed) {
-        this.driveTopSpeed = driveTopSpeed;
-    }
-
-    public String getDriveDistance() {
-        return driveDistance;
-    }
-
-    public void setDriveDistance(String driveDistance) {
-        this.driveDistance = driveDistance;
-    }
-
-    public String getDriveName() {
-        return driveName;
-    }
-
-    public void setDriveName(String driveName) {
-        this.driveName = driveName;
-    }
-
-    public String getDriveDuration() {
-        return driveDuration;
-    }
-
-    public void setDriveDuration(String driveDuration) {
-        this.driveDuration = driveDuration;
-    }
-
-    public String getNumPoints() {
+    public long getNumPoints() {
         return numPoints;
     }
 
-    public void setNumPoints(String numPoints) {
+    public void setNumPoints(long numPoints) {
         this.numPoints = numPoints;
     }
 }

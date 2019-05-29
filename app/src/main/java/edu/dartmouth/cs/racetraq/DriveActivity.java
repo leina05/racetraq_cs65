@@ -39,7 +39,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
-import edu.dartmouth.cs.racetraq.Models.DriveEntry;
+import edu.dartmouth.cs.racetraq.Models.DriveEntryFB;
 import edu.dartmouth.cs.racetraq.Fragments.SaveDriveDialogFragment;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 import edu.dartmouth.cs.racetraq.Services.TrackingService;
@@ -400,20 +400,20 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
     private void saveDrive() {
         mDriveAvgSpeed /= numDatapoints;
 
-        DriveEntry driveEntry = new DriveEntry();
-        driveEntry.setDriveName(mDriveName);
-        driveEntry.setDriveAvgSpeed(Double.toString(mDriveAvgSpeed));
-        driveEntry.setDriveDistance(Double.toString(mDriveDistance*KM_TO_MILE));
-        driveEntry.setDriveTimeStamp(dateTimeFormat.format(Long.parseLong(mDriveTimeStamp)));
-        driveEntry.setDriveTopSpeed(Double.toString(mDriveTopSpeed));
-        driveEntry.setDriveDuration(millisToString(endTime - Long.parseLong(mDriveTimeStamp)));
+        DriveEntryFB driveEntryFB = new DriveEntryFB();
+        driveEntryFB.setDriveName(mDriveName);
+        driveEntryFB.setDriveAvgSpeed(Double.toString(mDriveAvgSpeed));
+        driveEntryFB.setDriveDistance(Double.toString(mDriveDistance*KM_TO_MILE));
+        driveEntryFB.setDriveTimeStamp(dateTimeFormat.format(Long.parseLong(mDriveTimeStamp)));
+        driveEntryFB.setDriveTopSpeed(Double.toString(mDriveTopSpeed));
+        driveEntryFB.setDriveDuration(millisToString(endTime - Long.parseLong(mDriveTimeStamp)));
         Gson gson = new Gson();
         String gps_trace = gson.toJson(mLocationList);
-        driveEntry.setLocationList(gps_trace);
-        driveEntry.setNumPoints(Long.toString(numDatapoints));
+        driveEntryFB.setLocationList(gps_trace);
+        driveEntryFB.setNumPoints(Long.toString(numDatapoints));
 
         // post drive to firebase
-        addFirebaseSummary(driveEntry);
+        addFirebaseSummary(driveEntryFB);
 
 
     }
@@ -450,7 +450,7 @@ public class DriveActivity extends AppCompatActivity implements ServiceConnectio
 
     }
 
-    private void addFirebaseSummary(DriveEntry summary) {
+    private void addFirebaseSummary(DriveEntryFB summary) {
 
         mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
                 .child("drive_entries").child(mDriveTimeStamp).child("summary").setValue(summary)

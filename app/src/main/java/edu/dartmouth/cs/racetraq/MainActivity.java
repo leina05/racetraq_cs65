@@ -25,7 +25,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -38,7 +37,6 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 
-import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 
 public class MainActivity extends AppCompatActivity

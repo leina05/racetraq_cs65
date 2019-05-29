@@ -1,10 +1,8 @@
 package edu.dartmouth.cs.racetraq;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -12,10 +10,8 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 
-import com.androidplot.xy.XYPlot;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -29,8 +25,8 @@ import java.util.List;
 
 import edu.dartmouth.cs.racetraq.Adapters.HistoryViewAdapter;
 import edu.dartmouth.cs.racetraq.CustomViews.RecyclerTouchListener;
+import edu.dartmouth.cs.racetraq.Models.DriveEntryFB;
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
-import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 
 public class HistoryActivity extends AppCompatActivity {
 
@@ -41,7 +37,7 @@ public class HistoryActivity extends AppCompatActivity {
 
     // UI
     private RecyclerView.Adapter mAdapter;
-    private List<MockDriveEntry> driveEntryList = new ArrayList<>();
+    private List<DriveEntry> driveEntryList = new ArrayList<>();
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -111,7 +107,7 @@ public class HistoryActivity extends AppCompatActivity {
             @Override
             public void onClick(View view, int position) {
                 Intent intent = new Intent(HistoryActivity.this, DisplayDriveActivity.class);
-                MockDriveEntry entry = driveEntryList.get(position);
+                DriveEntry entry = driveEntryList.get(position);
                 String id = Long.toString(entry.getTimeMillis());
                 intent.putExtra(DRIVE_ENTRY_ID_KEY, id);
                 intent.putExtra(DRIVE_NAME_KEY, entry.getName());
@@ -137,7 +133,7 @@ public class HistoryActivity extends AppCompatActivity {
             }
             else
             {
-                MockDriveEntry entry = snapshotToDriveEntry(dataSnapshot);
+                DriveEntry entry = snapshotToDriveEntry(dataSnapshot);
                 driveEntryList.add(entry);
 
                 mAdapter.notifyDataSetChanged();
@@ -151,7 +147,9 @@ public class HistoryActivity extends AppCompatActivity {
 
         @Override
         public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-
+            String timestamp = (String) dataSnapshot.child("summary").child("driveTimeStamp").getValue();
+            HistoryActivity.DeleteDriveTask task = new HistoryActivity.DeleteDriveTask();
+            task.execute(timestamp);
         }
 
         @Override
@@ -165,9 +163,9 @@ public class HistoryActivity extends AppCompatActivity {
         }
     };
 
-    private MockDriveEntry snapshotToDriveEntry(DataSnapshot ds)
+    private DriveEntry snapshotToDriveEntry(DataSnapshot ds)
     {
-        DriveEntry entry = new DriveEntry();
+        DriveEntryFB entry = new DriveEntryFB();
 
         entry.setDriveAvgSpeed((String) ds.child("summary").child("driveAvgSpeed").getValue());
         entry.setDriveDistance((String) ds.child("summary").child("driveDistance").getValue());
@@ -178,10 +176,37 @@ public class HistoryActivity extends AppCompatActivity {
         entry.setLocationList((String) ds.child("summary").child("locationList").getValue());
         entry.setNumPoints((String) ds.child("summary").child("numPoints").getValue());
 
-        MockDriveEntry finalEntry = new MockDriveEntry(entry, this);
+        DriveEntry finalEntry = new DriveEntry(entry, this);
         finalEntry.setTimeMillis(Long.parseLong(ds.getKey()));
 
         return finalEntry;
     }
 
+    /** ASYNC TASKS **/
+
+    /** ASYNC TASKS **/
+
+    class DeleteDriveTask extends AsyncTask<String, Void, Void> {
+
+
+        @Override
+        protected Void doInBackground(String... strings) {
+            String timestamp = strings[0];
+
+            for (int i =0; i<driveEntryList.size(); i++)
+            {
+                if (driveEntryList.get(i).getDateTime().equals(timestamp))
+                {
+                    driveEntryList.remove(i);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            mAdapter.notifyDataSetChanged();
+        }
+    }
 }

@@ -13,12 +13,12 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
-import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
+import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 import edu.dartmouth.cs.racetraq.R;
 
 public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.DriveViewHolder>{
 
-    private List<MockDriveEntry> entryList;
+    private List<DriveEntry> entryList;
     private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm", Locale.US);
     private Context context;
     private String unitPref;
@@ -46,7 +46,7 @@ public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.
     /**
      * Constructor
      */
-    public HistoryViewAdapter(List<MockDriveEntry> entryList, Context context) {
+    public HistoryViewAdapter(List<DriveEntry> entryList, Context context) {
         this.entryList = entryList;
         this.context = context;
     }
@@ -60,7 +60,7 @@ public class HistoryViewAdapter extends RecyclerView.Adapter<HistoryViewAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull DriveViewHolder holder, int position) {
-        MockDriveEntry entry = entryList.get(position);
+        DriveEntry entry = entryList.get(position);
 
         // Set image
         holder.map_thumbnail.setImageBitmap(entry.getMap_thumbnail());

@@ -7,19 +7,15 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
-import com.androidplot.ui.DynamicTableModel;
-import com.androidplot.ui.FixedTableModel;
-import com.androidplot.ui.Size;
-import com.androidplot.ui.SizeMode;
-import com.androidplot.ui.TableOrder;
 import com.androidplot.util.PixelUtils;
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.CatmullRomInterpolator;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.XYGraphWidget;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -36,17 +32,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.text.FieldPosition;
-import java.text.Format;
-import java.text.ParsePosition;
 import java.util.ArrayList;
 
-import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
+import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 
 public class DisplayDriveActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     // Drive entry data
-    private MockDriveEntry driveEntry;
+    private DriveEntry driveEntry;
     private String entryId;
     private ArrayList<Double> speedList;
     private ArrayList<Integer> engTempList;
@@ -135,6 +128,24 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         mapFragment.getMapAsync(this);
 
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_display_drive_activity, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.delete_drive_action)
+        {
+            mRef.child(mUserID).child("drive_entries").child(entryId).removeValue();
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     /**
