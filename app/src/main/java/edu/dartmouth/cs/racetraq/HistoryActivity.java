@@ -4,6 +4,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
@@ -35,12 +36,15 @@ public class HistoryActivity extends AppCompatActivity {
     public static final String DRIVE_ENTRY_ID_KEY = "drive_entry_id";
     public static final String DRIVE_NAME_KEY = "drive_name_key";
     public static final String NUM_POINTS_KEY = "num_points_key";
+    private static final long LOADING_TIMEOUT = 5000;  // timeout loading after 10 seconds
 
 
     // UI
     private RecyclerView.Adapter mAdapter;
     private List<DriveEntry> driveEntryList = new ArrayList<>();
     private AlertDialog loadingDialog;
+    private Handler handler;
+    private boolean loading = false;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -136,6 +140,22 @@ public class HistoryActivity extends AppCompatActivity {
             loadingDialog = builder.create();
             loadingDialog.setCanceledOnTouchOutside(false);
             loadingDialog.show();
+            loading = true;
+
+            handler = new Handler();
+
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (loading)
+                    {
+                        loadingDialog.cancel();
+                        loading = false;
+                        savedDrives = driveEntryList.size();
+                        mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
+                    }
+                }
+            }, LOADING_TIMEOUT);
         }
 
 
@@ -166,6 +186,7 @@ public class HistoryActivity extends AppCompatActivity {
                     if (loadingDialog != null)
                     {
                         loadingDialog.cancel();
+                        loading = false;
                     }
                 }
             }
@@ -216,8 +237,6 @@ public class HistoryActivity extends AppCompatActivity {
 
     /** ASYNC TASKS **/
 
-    /** ASYNC TASKS **/
-
     class DeleteDriveTask extends AsyncTask<String, Void, Void> {
 
 
@@ -242,13 +261,11 @@ public class HistoryActivity extends AppCompatActivity {
             // delete entry;
             if (delete >= 0)
             {
-                driveEntryList.remove(delete);
-
                 // update home stats
                 savedDrives--;
                 topSpeed = newTopSpeed;
                 milesDriven -= driveEntryList.get(delete).getDistance();
-
+                driveEntryList.remove(delete);
 
                 mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
                 mRef.child(mUserID).child("home_stats").child("milesDriven").setValue(Double.toString(milesDriven));
