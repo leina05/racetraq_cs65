@@ -355,7 +355,12 @@ public class MainActivity extends AppCompatActivity
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                deviceConnected = true;
+                ArrayList<BluetoothDevice> connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+                if (connectedDevices != null && !connectedDevices.isEmpty())
+                {
+                    deviceConnected = true;
+                    connectedDevice = connectedDevices.get(0);
+                }
                 updateUI();
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 deviceConnected = false;
@@ -371,21 +376,21 @@ public class MainActivity extends AppCompatActivity
      */
     private void updateUI() {
 
-        ArrayList<BluetoothDevice> connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
-        if (connectedDevices != null && !connectedDevices.isEmpty())
-        {
-            deviceConnected = true;
-            connectedDevice = connectedDevices.get(0);
-        }
-        else
-        {
-            deviceConnected = false;
-        }
+//        ArrayList<BluetoothDevice> connectedDevices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+//        if (connectedDevices != null && !connectedDevices.isEmpty())
+//        {
+//            deviceConnected = true;
+//            connectedDevice = connectedDevices.get(0);
+//        }
+//        else
+//        {
+//            deviceConnected = false;
+//        }
 
         if (deviceConnected)
         {
             mBLEConnectButton.setText("Disconnect");
-            String deviceName = connectedDevices.get(0).getName();
+            String deviceName = connectedDevice.getName();
             mConnectionStatusTextView.setText(String.format("Connected to: %s", deviceName == null ? connectedDevice.getAddress() : deviceName));
         }
         else

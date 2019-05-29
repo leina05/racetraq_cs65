@@ -44,7 +44,6 @@ public class HistoryActivity extends AppCompatActivity {
     private List<DriveEntry> driveEntryList = new ArrayList<>();
     private AlertDialog loadingDialog;
     private Handler handler;
-    private boolean loading = false;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -72,10 +71,9 @@ public class HistoryActivity extends AppCompatActivity {
         mRef = mDatabase.getReference();
         mUser = mAuth.getCurrentUser();
 
-        if (mUser != null)
-        {
+        if (mUser != null) {
             userEmail = mUser.getEmail();
-            mUserID = "user_"+DriveActivity.EmailHash(userEmail);
+            mUserID = "user_" + DriveActivity.EmailHash(userEmail);
             mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 
@@ -87,8 +85,7 @@ public class HistoryActivity extends AppCompatActivity {
         // UI
 
         /* Set Back Button */
-        if (getSupportActionBar() != null)
-        {
+        if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
             getSupportActionBar().setDisplayShowHomeEnabled(true);
@@ -131,8 +128,7 @@ public class HistoryActivity extends AppCompatActivity {
             }
         }));
 
-        if (savedDrives > 0)
-        {
+        if (savedDrives > 0) {
             // Loading dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("Loading saved drives...");
@@ -140,20 +136,15 @@ public class HistoryActivity extends AppCompatActivity {
             loadingDialog = builder.create();
             loadingDialog.setCanceledOnTouchOutside(false);
             loadingDialog.show();
-            loading = true;
 
             handler = new Handler();
 
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    if (loading)
-                    {
-                        loadingDialog.cancel();
-                        loading = false;
-                        savedDrives = driveEntryList.size();
-                        mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
-                    }
+                    loadingDialog.cancel();
+                    savedDrives = driveEntryList.size();
+                    mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
                 }
             }, LOADING_TIMEOUT);
         }
@@ -169,24 +160,19 @@ public class HistoryActivity extends AppCompatActivity {
         @Override
         public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
             // if no summary, delete entry
-            if (dataSnapshot.child("summary").getValue() == null)
-            {
+            if (dataSnapshot.child("summary").getValue() == null) {
                 dataSnapshot.getRef().removeValue();
-            }
-            else
-            {
+            } else {
                 DriveEntry entry = snapshotToDriveEntry(dataSnapshot);
                 driveEntryList.add(entry);
 
                 mAdapter.notifyDataSetChanged();
 
                 // stop loading dialog once all drives have been loaded
-                if (driveEntryList.size() == savedDrives)
-                {
-                    if (loadingDialog != null)
-                    {
+                if (driveEntryList.size() == savedDrives) {
+                    if (loadingDialog != null) {
                         loadingDialog.cancel();
-                        loading = false;
+                        handler.removeCallbacksAndMessages(null);
                     }
                 }
             }
@@ -216,8 +202,7 @@ public class HistoryActivity extends AppCompatActivity {
         }
     };
 
-    private DriveEntry snapshotToDriveEntry(DataSnapshot ds)
-    {
+    private DriveEntry snapshotToDriveEntry(DataSnapshot ds) {
         DriveEntryFB entry = new DriveEntryFB();
 
         entry.setDriveAvgSpeed((String) ds.child("summary").child("driveAvgSpeed").getValue());
@@ -235,7 +220,9 @@ public class HistoryActivity extends AppCompatActivity {
         return finalEntry;
     }
 
-    /** ASYNC TASKS **/
+    /**
+     * ASYNC TASKS
+     **/
 
     class DeleteDriveTask extends AsyncTask<String, Void, Void> {
 
@@ -246,21 +233,16 @@ public class HistoryActivity extends AppCompatActivity {
             double newTopSpeed = 0;
             int delete = -1;
 
-            for (int i =0; i<driveEntryList.size(); i++)
-            {
-                if (driveEntryList.get(i).getDateTime().equals(timestamp))
-                {
+            for (int i = 0; i < driveEntryList.size(); i++) {
+                if (driveEntryList.get(i).getDateTime().equals(timestamp)) {
                     delete = i;
-                }
-                else if (driveEntryList.get(i).getTopSpeed() > newTopSpeed)
-                {
+                } else if (driveEntryList.get(i).getTopSpeed() > newTopSpeed) {
                     newTopSpeed = driveEntryList.get(i).getTopSpeed();
                 }
             }
 
             // delete entry;
-            if (delete >= 0)
-            {
+            if (delete >= 0) {
                 // update home stats
                 savedDrives--;
                 topSpeed = newTopSpeed;

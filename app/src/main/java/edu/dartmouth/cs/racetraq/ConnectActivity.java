@@ -93,8 +93,6 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     BleConnectionReceiver broadcastReceiver;
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,8 +103,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         /*** UI ***/
 
         // Set Back Button
-        if (getSupportActionBar() != null)
-        {
+        if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
             getSupportActionBar().setDisplayShowHomeEnabled(true);
@@ -161,8 +158,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         // bind to BleService
         Intent bleIntent = new Intent(this, BluetoothLeService.class);
 
-        if (!isBound)
-        {
+        if (!isBound) {
             bindService(bleIntent, mConnection, Context.BIND_AUTO_CREATE);
             isBound = true;
         }
@@ -173,8 +169,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     protected void onPause() {
         super.onPause();
 
-        if (broadcastReceiver != null)
-        {
+        if (broadcastReceiver != null) {
             unregisterReceiver(broadcastReceiver);
         }
     }
@@ -190,8 +185,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
         updateUI();
 
         // register receiver
-        if (broadcastReceiver == null)
-        {
+        if (broadcastReceiver == null) {
             broadcastReceiver = new BleConnectionReceiver();
         }
         IntentFilter mapFilter = new IntentFilter();
@@ -204,8 +198,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     protected void onDestroy() {
         super.onDestroy();
 
-        if(isBound)
-        {
+        if (isBound) {
             unbindService(mConnection);
             isBound = false;
         }
@@ -411,23 +404,19 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             showStatusDialog(true, R.string.connecting);
 
             // connect to bluetooth device
-            if (mBluetoothLeService != null)
-            {
+            if (mBluetoothLeService != null) {
                 mBluetoothLeService.connect(device.getAddress());
 
                 // Stops scanning after a pre-defined scan period.
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (!mBluetoothLeService.isConnected())
-                        {
-                            mBluetoothLeService.disconnect();
-                            showStatusDialog(true, R.string.connect_timeout);
-                        }
+                        mBluetoothLeService.disconnect();
+                        showStatusDialog(true, R.string.connect_timeout);
                     }
                 }, CONNECT_TIMEOUT);
             }
-;
+            ;
 
 
         } else {
@@ -438,8 +427,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     /**
      * Broadcast Receiver for GattCallback connection events
      */
-    private class BleConnectionReceiver extends BroadcastReceiver
-    {
+    private class BleConnectionReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -447,6 +435,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
                 deviceConnected = true;
                 connectionState = STATE_CONNECTED;
+                handler.removeCallbacksAndMessages(null);
                 showStatusDialog(true, R.string.device_connected);
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 deviceConnected = false;
@@ -466,8 +455,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage(stringId);
 
-            if (stringId == R.string.device_connected)
-            {
+            if (stringId == R.string.device_connected) {
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -476,8 +464,7 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
                 });
             }
 
-            if (stringId == R.string.connect_timeout)
-            {
+            if (stringId == R.string.connect_timeout) {
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -515,13 +502,12 @@ public class ConnectActivity extends AppCompatActivity implements ServiceConnect
     /**
      * VIEW ADAPTER
      **/
-    public class ConnectViewAdapter extends RecyclerView.Adapter<ConnectViewAdapter.DeviceViewHolder>{
+    public class ConnectViewAdapter extends RecyclerView.Adapter<ConnectViewAdapter.DeviceViewHolder> {
 
         private ArrayList<BluetoothDeviceData> deviceList;
 
         // Constructor
-        public ConnectViewAdapter(ArrayList<BluetoothDeviceData> deviceList)
-        {
+        public ConnectViewAdapter(ArrayList<BluetoothDeviceData> deviceList) {
             this.deviceList = deviceList;
         }
 
