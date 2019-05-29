@@ -5,20 +5,20 @@
 
     <group android:checkableBehavior="single">
 
-        <item
-            android:id="@+id/edit_profile_drawer"
-            android:icon="@drawable/profile_icon"
-            android:title="Edit Profile" />
+        <!--<item-->
+            <!--android:id="@+id/edit_profile_drawer"-->
+            <!--android:icon="@drawable/profile_icon"-->
+            <!--android:title="Edit Profile" />-->
 
         <item
             android:id="@+id/saved_drives_drawer"
             android:icon="@drawable/ic_menu_gallery"
             android:title="Saved Drives" />
 
-        <item
-            android:id="@+id/settings_drawer"
-            android:icon="@drawable/settings_icon"
-            android:title="Settings" />
+        <!--<item-->
+            <!--android:id="@+id/settings_drawer"-->
+            <!--android:icon="@drawable/settings_icon"-->
+            <!--android:title="Settings" />-->
 
         <item
             android:id="@+id/logout_drawer"

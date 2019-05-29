@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity
     public static final String SAVED_DRIVES_KEY = "saved_drives_key";
     public static final String MILES_DRIVEN_KEY = "miles_driven_key";
     public static final String TOP_SPEED_KEY = "top_speed_key";
-    private static final int NUM_DRAWERS = 4;
+    private static final int NUM_DRAWERS = 2;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -61,7 +61,6 @@ public class MainActivity extends AppCompatActivity
 
     // UI
     private Button mNewDriveButton;
-//    private Button mBLEConnectButton;
     private TextView mConnectionStatusTextView;
     private AlertDialog alertDialog;
     private TextView numDrivesTextView;
@@ -151,28 +150,6 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // Set Connect Button OnClickListener
-//        mBLEConnectButton = findViewById(R.id.ble_connection_button);
-//        mBLEConnectButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (deviceConnected)
-//                {
-//                    if (BluetoothLeService.isRunning())
-//                    {
-//                        showStatusDialog(true, R.string.disconnecting);
-//                        mBluetoothLeService.disconnect();
-//                        mBLEConnectButton.setEnabled(false);
-//                    }
-//                }
-//                else
-//                {
-//                    Intent intent = new Intent(MainActivity.this, ConnectActivity.class);
-//                    startActivity(intent);
-//                }
-//
-//            }
-//        });
 
         connectFab = findViewById(R.id.connect_fab);
         connectFab.setOnClickListener(new View.OnClickListener() {
@@ -274,9 +251,10 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.edit_profile_drawer) {
-            // Handle the camera action
-        } else if (id == R.id.saved_drives_drawer) {
+//        if (id == R.id.edit_profile_drawer) {
+//            // Handle the camera action
+//        } else
+        if (id == R.id.saved_drives_drawer) {
             Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
             if (numDrivesTextView != null)
             {
@@ -291,7 +269,7 @@ public class MainActivity extends AppCompatActivity
                 intent.putExtra(TOP_SPEED_KEY, Double.parseDouble(topSpeedTextView.getText().toString()));
             }
             startActivity(intent);
-        } else if (id == R.id.settings_drawer) {
+//        } else if (id == R.id.settings_drawer) {
 
         } else if (id == R.id.logout_drawer) {
             mAuth.signOut();
@@ -396,7 +374,6 @@ public class MainActivity extends AppCompatActivity
                 updateUI();
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 deviceConnected = false;
-//                mBLEConnectButton.setEnabled(true);
                 connectFab.setEnabled(true);
                 showStatusDialog(false, R.string.disconnecting);
                 updateUI();
@@ -411,14 +388,12 @@ public class MainActivity extends AppCompatActivity
 
         if (deviceConnected)
         {
-//            mBLEConnectButton.setText("Disconnect");
             connectFab.setImageResource(R.drawable.disconnect_icon);
             String deviceName = connectedDevice.getName();
             mConnectionStatusTextView.setText(String.format("Connected to: %s", deviceName == null ? connectedDevice.getAddress() : deviceName));
         }
         else
         {
-//            mBLEConnectButton.setText("Connect");
             connectFab.setImageResource(R.drawable.connect_icon);
             mConnectionStatusTextView.setText("No device connected.");
         }

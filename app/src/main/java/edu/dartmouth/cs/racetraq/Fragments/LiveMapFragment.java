@@ -247,7 +247,11 @@ public class LiveMapFragment extends Fragment {
                     }
                 });
             }
+
+
         };
+
+
 
         googleMap.snapshot(callback);
     }

@@ -311,8 +311,6 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         plot.setDomainBoundaries(null, null, BoundaryMode.AUTO);
         plot.setRangeBoundaries(null, null, BoundaryMode.AUTO);
 
-        // TODO: adjust legend positioning
-
     }
 
     @Override
