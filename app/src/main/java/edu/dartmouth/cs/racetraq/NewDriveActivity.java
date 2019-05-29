@@ -110,6 +110,7 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
     // Firebase
     private DatabaseReference mDatabase;
     private FirebaseAuth mFirebaseAuth;
+    private String mUserId;
 
     // Home stats
     private int savedDrives = 0;
@@ -178,8 +179,8 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
 
         if (mUser != null)
         {
-            String mUserID = "user_"+DriveActivity.EmailHash(mUser.getEmail());
-            mDatabase.child(mUserID).child("home_stats").addChildEventListener(homeStatsListener);
+            mUserId = "user_"+DriveActivity.EmailHash(mUser.getEmail());
+            mDatabase.child(mUserId).child("home_stats").addChildEventListener(homeStatsListener);
         }
 
 
@@ -568,6 +569,8 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
 
         HomePageStats stats = new HomePageStats(savedDrives, milesDriven, maxTopSpeed);
         addFirebaseHomeStats(stats);
+
+        liveMapFragment.captureMap("mapSnapshots/"+mDriveTimeStamp+".jpeg", mUserId);
     }
 
     /**

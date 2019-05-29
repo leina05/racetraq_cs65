@@ -7,10 +7,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -30,9 +32,23 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import edu.dartmouth.cs.racetraq.R;
 import edu.dartmouth.cs.racetraq.Services.TrackingService;
+
+import static android.content.Context.MODE_PRIVATE;
+import static android.os.ParcelFileDescriptor.MODE_WORLD_READABLE;
+import static edu.dartmouth.cs.racetraq.Utils.Constants.storageURL;
 
 
 public class LiveMapFragment extends Fragment {
@@ -45,11 +61,17 @@ public class LiveMapFragment extends Fragment {
     // UI
     MapView mMapView;
     private GoogleMap googleMap;
-
     private Marker startMarker = null;
     private Marker pathMarker = null;
     private Polyline path;
     private PolylineOptions pathOptions;
+
+    // Map Capture
+    private Bitmap bitmap;
+
+    //Firebase
+    private FirebaseStorage storage;
+    private StorageReference storageReference;
 
     public LiveMapFragment() {
         // Required empty public constructor
@@ -62,6 +84,9 @@ public class LiveMapFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
 
     }
 
@@ -191,6 +216,57 @@ public class LiveMapFragment extends Fragment {
                 // update entry parameters
             }
         }
+    }
+
+    public void captureMap(final String filePath, final String mUserId) {
+        GoogleMap.SnapshotReadyCallback callback = new GoogleMap.SnapshotReadyCallback()
+        {
+
+            @Override
+            public void onSnapshotReady(Bitmap snapshot)
+            {
+                // TODO Auto-generated method stub
+                bitmap = snapshot;
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                byte[] data = baos.toByteArray();
+
+                StorageReference imageRef = storageReference.child(mUserId).child(filePath);
+
+                UploadTask uploadTask = imageRef.putBytes(data);
+                uploadTask.addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle unsuccessful uploads
+                    }
+                }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
+                        Uri downloadUrl = taskSnapshot.getUploadSessionUri();
+                    }
+                });
+
+//                OutputStream fout = null;
+//
+//                String myFilePath = filePath;
+//                try (FileOutputStream out = getContext().openFileOutput(myFilePath, MODE_PRIVATE)) {
+//                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+//                    // PNG is a lossless format, the compression factor (100) is ignored
+//
+//                    out.flush();
+//                    out.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                    myFilePath = "";
+//                }
+
+                // could call another method here with myFilePath
+            }
+        };
+
+        googleMap.snapshot(callback);
     }
 
 

@@ -2,6 +2,8 @@ package edu.dartmouth.cs.racetraq;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +17,8 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -22,6 +26,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,13 +37,15 @@ import edu.dartmouth.cs.racetraq.CustomViews.RecyclerTouchListener;
 import edu.dartmouth.cs.racetraq.Models.DriveEntryFB;
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 
+import static edu.dartmouth.cs.racetraq.Utils.Constants.storageURL;
+
 public class HistoryActivity extends AppCompatActivity {
 
     public static final String DRIVE_ENTRY_ID_KEY = "drive_entry_id";
     public static final String DRIVE_NAME_KEY = "drive_name_key";
     public static final String NUM_POINTS_KEY = "num_points_key";
-    private static final long LOADING_TIMEOUT = 5000;  // timeout loading after 10 seconds
-
+    private static final long LOADING_TIMEOUT = 10000;  // timeout loading after 10 seconds
+    private static final long ONE_MEGABYTE = 1024 * 1024;
 
     // UI
     private RecyclerView.Adapter mAdapter;
@@ -53,6 +61,10 @@ public class HistoryActivity extends AppCompatActivity {
     private String mUserID;
     private String userEmail;
     private String driveId;
+    private FirebaseStorage storage;
+    private StorageReference storageReference;
+
+    // Drive Data
     private int savedDrives;
     private double milesDriven;
     private double topSpeed;
@@ -70,11 +82,13 @@ public class HistoryActivity extends AppCompatActivity {
         mDatabase = FirebaseDatabase.getInstance();
         mRef = mDatabase.getReference();
         mUser = mAuth.getCurrentUser();
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
 
         if (mUser != null) {
             userEmail = mUser.getEmail();
             mUserID = "user_" + DriveActivity.EmailHash(userEmail);
-            mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
+//            mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
         }
 
         // Get Intent Extras
@@ -144,12 +158,25 @@ public class HistoryActivity extends AppCompatActivity {
                 public void run() {
                     loadingDialog.cancel();
                     savedDrives = driveEntryList.size();
+                    mAdapter.notifyDataSetChanged();
                     mRef.child(mUserID).child("home_stats").child("savedDrives").setValue(Integer.toString(savedDrives));
                 }
             }, LOADING_TIMEOUT);
         }
 
+    }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mRef.child(mUserID).child("drive_entries").removeEventListener(driveEntryListener);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        driveEntryList.clear();
+        mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
     }
 
     /**
@@ -166,15 +193,41 @@ public class HistoryActivity extends AppCompatActivity {
                 DriveEntry entry = snapshotToDriveEntry(dataSnapshot);
                 driveEntryList.add(entry);
 
-                mAdapter.notifyDataSetChanged();
+                DownloadMapTask task = new DownloadMapTask();
+                task.execute(driveEntryList.size()-1);
+
+
+//                StorageReference mapRef = storageReference.child(mUserID).child("mapSnapshots/"+dataSnapshot.getKey()+".jpeg");
+//
+//                mapRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+//                    @Override
+//                    public void onSuccess(byte[] bytes) {
+//                        // Data for "images/island.jpg" is returns, use this as needed
+//                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+//                        int newHeight = (int) (0.857*bitmap.getWidth());
+//                        int y0 = (bitmap.getHeight()-newHeight)/2;
+//                        bitmap = Bitmap.createBitmap(bitmap, 0, y0, bitmap.getWidth(), newHeight);
+//                        driveEntryList.get(driveEntryList.size()-1).setMap_thumbnail(bitmap);
+//                        mAdapter.notifyDataSetChanged();
+//                    }
+//                }).addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception exception) {
+//                        // Handle any errors
+//                    }
+//                });
+
+
+//                mAdapter.notifyDataSetChanged();
 
                 // stop loading dialog once all drives have been loaded
-                if (driveEntryList.size() == savedDrives) {
-                    if (loadingDialog != null) {
-                        loadingDialog.cancel();
-                        handler.removeCallbacksAndMessages(null);
-                    }
-                }
+//                if (driveEntryList.size() == savedDrives) {
+//                    if (loadingDialog != null) {
+//                        loadingDialog.cancel();
+//                        handler.removeCallbacksAndMessages(null);
+//                    }
+//                    mAdapter.notifyDataSetChanged();
+//                }
             }
         }
 
@@ -201,6 +254,22 @@ public class HistoryActivity extends AppCompatActivity {
 
         }
     };
+
+//    OnSuccessListener mapDownloadSuccessListener = new OnSuccessListener<byte[]>() {
+//
+//
+//        @Override
+//        public void onSuccess(byte[] bytes) {
+//
+//        }
+//    };
+//
+//    OnFailureListener mapDownloadFailureListener = new OnFailureListener() {
+//        @Override
+//        public void onFailure(@NonNull Exception e) {
+//
+//        }
+//    };
 
     private DriveEntry snapshotToDriveEntry(DataSnapshot ds) {
         DriveEntryFB entry = new DriveEntryFB();
@@ -262,6 +331,57 @@ public class HistoryActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    class DownloadMapTask extends AsyncTask<Integer, Void, Void> {
+
+
+        @Override
+        protected Void doInBackground(Integer... integers) {
+            final int index = integers[0];
+            DriveEntry entry = driveEntryList.get(index);
+            String timestamp = Long.toString(entry.getTimeMillis());
+
+            StorageReference mapRef = storageReference.child(mUserID).child("mapSnapshots/"+timestamp+".jpeg");
+
+            mapRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                @Override
+                public void onSuccess(byte[] bytes) {
+                    // Data for "images/island.jpg" is returns, use this as needed
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    int newHeight = (int) (0.857*bitmap.getWidth());
+                    int y0 = (bitmap.getHeight()-newHeight)/2;
+                    bitmap = Bitmap.createBitmap(bitmap, 0, y0, bitmap.getWidth(), newHeight);
+                    driveEntryList.get(index).setMap_thumbnail(bitmap);
+
+                    // if last picture to load, close loading dialog
+                    if (index == savedDrives-1)
+                    {
+                        if (loadingDialog != null) {
+                            loadingDialog.cancel();
+                            handler.removeCallbacksAndMessages(null);
+                        }
+                        mAdapter.notifyDataSetChanged();
+                    }
+
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    // if last picture to load, close loading dialog
+                    if (index == savedDrives-1)
+                    {
+                        if (loadingDialog != null) {
+                            loadingDialog.cancel();
+                            handler.removeCallbacksAndMessages(null);
+                        }
+                        mAdapter.notifyDataSetChanged();
+                    }
+                }
+            });
+
+            return null;
         }
     }
 }
