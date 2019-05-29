@@ -12,6 +12,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
@@ -27,6 +28,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.gson.Gson;
@@ -47,6 +52,7 @@ import edu.dartmouth.cs.racetraq.Fragments.LiveMapFragment;
 import edu.dartmouth.cs.racetraq.Models.DriveDatapoint;
 import edu.dartmouth.cs.racetraq.Models.DriveEntry;
 import edu.dartmouth.cs.racetraq.Fragments.SaveDriveDialogFragment;
+import edu.dartmouth.cs.racetraq.Models.HomePageStats;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 import edu.dartmouth.cs.racetraq.Services.TrackingService;
 
@@ -104,6 +110,11 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
     // Firebase
     private DatabaseReference mDatabase;
     private FirebaseAuth mFirebaseAuth;
+
+    // Home stats
+    private int savedDrives = 0;
+    private double milesDriven = 0;
+    private double maxTopSpeed = 0;
 
 
     /** OVERRIDE METHODS **/
@@ -163,6 +174,14 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
         // Firebase
         mDatabase = FirebaseDatabase.getInstance().getReference();
         mFirebaseAuth = FirebaseAuth.getInstance();
+        FirebaseUser mUser = mFirebaseAuth.getCurrentUser();
+
+        if (mUser != null)
+        {
+            String mUserID = "user_"+DriveActivity.EmailHash(mUser.getEmail());
+            mDatabase.child(mUserID).child("home_stats").addChildEventListener(homeStatsListener);
+        }
+
 
         // Bind to BLE service
         Intent bleIntent = new Intent(this, BluetoothLeService.class);
@@ -349,6 +368,52 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
         }
     }
 
+    /**
+     * Event listener for changes in Firebase exercise entries
+     */
+    ChildEventListener homeStatsListener = new ChildEventListener() {
+
+        @Override
+        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            {
+                if (dataSnapshot.getKey().equals("savedDrives"))
+                {
+                    savedDrives = Integer.parseInt((String) dataSnapshot.getValue());
+                }
+                else if (dataSnapshot.getKey().equals("milesDriven"))
+                {
+                    milesDriven = Double.parseDouble((String) dataSnapshot.getValue());
+                }
+                else if (dataSnapshot.getKey().equals("topSpeed"))
+                {
+                    maxTopSpeed = Double.parseDouble((String) dataSnapshot.getValue());
+                }
+
+            }
+
+        }
+
+        @Override
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+        }
+    };
+
     /** PRIVATE METHODS **/
 
     private void findGattServices(List<BluetoothGattService> gattServices) {
@@ -450,6 +515,22 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
 
     }
 
+    private void addFirebaseHomeStats(HomePageStats stats)
+    {
+        mDatabase.child("user_"+EmailHash(Objects.requireNonNull(mFirebaseAuth.getCurrentUser()).getEmail()))
+                .child("home_stats").setValue(stats)
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            // finished inserting
+                        } else {
+                            // insertion failed
+                        }
+                    }
+                });
+    }
+
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
@@ -477,7 +558,16 @@ public class NewDriveActivity extends AppCompatActivity implements ServiceConnec
         // post drive to firebase
         addFirebaseSummary(driveEntry);
 
+        // update home stats
+        savedDrives++;
+        milesDriven += mDriveDistance;
+        if (mDriveTopSpeed > maxTopSpeed)
+        {
+            maxTopSpeed = mDriveTopSpeed;
+        }
 
+        HomePageStats stats = new HomePageStats(savedDrives, milesDriven, maxTopSpeed);
+        addFirebaseHomeStats(stats);
     }
 
     /**

@@ -14,6 +14,8 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -23,12 +25,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 
+import edu.dartmouth.cs.racetraq.Models.MockDriveEntry;
 import edu.dartmouth.cs.racetraq.Services.BluetoothLeService;
 
 public class MainActivity extends AppCompatActivity
@@ -36,6 +46,11 @@ public class MainActivity extends AppCompatActivity
 
     // Firebase
     private FirebaseAuth mAuth;
+    private FirebaseDatabase mDatabase;
+    private DatabaseReference mRef;
+    private FirebaseUser mUser;
+    private String mUserID;
+    private String userEmail;
 
 
     // UI
@@ -43,6 +58,9 @@ public class MainActivity extends AppCompatActivity
     private Button mBLEConnectButton;
     private TextView mConnectionStatusTextView;
     private AlertDialog alertDialog;
+    private TextView numDrivesTextView;
+    private TextView milesDrivenTextView;
+    private TextView topSpeedTextView;
 
     // BLE
     private BluetoothManager bluetoothManager;
@@ -56,6 +74,7 @@ public class MainActivity extends AppCompatActivity
     private ServiceConnection mConnection = this;
     private BleConnectionReceiver broadcastReceiver;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,18 +82,39 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        numDrivesTextView = findViewById(R.id.num_saved_drives_text);
+        milesDrivenTextView = findViewById(R.id.num_miles_driven);
+        topSpeedTextView = findViewById(R.id.top_speed_num);
+
+
         /* Check firebase authentication */
         mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() == null) {
             Intent intent = new Intent(MainActivity.this, SignInActivity.class);
             startActivity(intent);
         }
+        else
+        {
+            mDatabase = FirebaseDatabase.getInstance();
+            mRef = mDatabase.getReference();
+            mUser = mAuth.getCurrentUser();
+
+            if (mUser != null)
+            {
+                userEmail = mUser.getEmail();
+                mUserID = "user_"+DriveActivity.EmailHash(userEmail);
+                mRef.child(mUserID).child("home_stats").addChildEventListener(homeStatsListener);
+            }
+        }
+
+
 
         /* Set up Bluetooth */
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
 
-        /* Set up UI */
+        // UI
+
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -112,6 +152,7 @@ public class MainActivity extends AppCompatActivity
                 {
                     if (BluetoothLeService.isRunning())
                     {
+                        showStatusDialog(true, R.string.disconnecting);
                         mBluetoothLeService.disconnect();
                         mBLEConnectButton.setEnabled(false);
                     }
@@ -124,6 +165,7 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
+
 
         // register broadcast receivers
         if (broadcastReceiver == null)
@@ -229,6 +271,87 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+
+    /**
+     * Event listener for changes in Firebase exercise entries
+     */
+    ChildEventListener homeStatsListener = new ChildEventListener() {
+
+        @Override
+        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            if (dataSnapshot.getKey().equals("savedDrives"))
+            {
+                numDrivesTextView.setText((String) dataSnapshot.getValue());
+            }
+            else if (dataSnapshot.getKey().equals("milesDriven"))
+            {
+                double miles = Double.parseDouble((String) dataSnapshot.getValue());
+                milesDrivenTextView.setText(String.format("%.2f", miles));
+
+            }
+            else if (dataSnapshot.getKey().equals("topSpeed"))
+            {
+                topSpeedTextView.setText((String) dataSnapshot.getValue());
+            }
+
+        }
+
+        @Override
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            if (dataSnapshot.getKey().equals("savedDrives"))
+            {
+                numDrivesTextView.setText((String) dataSnapshot.getValue());
+            }
+            else if (dataSnapshot.getKey().equals("milesDriven"))
+            {
+                double miles = Double.parseDouble((String) dataSnapshot.getValue());
+                milesDrivenTextView.setText(String.format("%.2f", miles));
+
+            }
+            else if (dataSnapshot.getKey().equals("topSpeed"))
+            {
+                topSpeedTextView.setText((String) dataSnapshot.getValue());
+            }
+        }
+
+        @Override
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+        }
+    };
+
+    /**
+     * Broadcast Receiver for GattCallback connection events
+     */
+    private class BleConnectionReceiver extends BroadcastReceiver
+    {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+                deviceConnected = true;
+                updateUI();
+            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
+                deviceConnected = false;
+                mBLEConnectButton.setEnabled(true);
+                showStatusDialog(false, R.string.disconnecting);
+                updateUI();
+            }
+        }
+    }
+
     /**
      * PRIVATE FUNCTIONS
      */
@@ -290,23 +413,4 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    /**
-     * Broadcast Receiver for GattCallback connection events
-     */
-    private class BleConnectionReceiver extends BroadcastReceiver
-    {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                deviceConnected = true;
-                updateUI();
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                deviceConnected = false;
-                mBLEConnectButton.setEnabled(true);
-                updateUI();
-            }
-        }
-    }
 }

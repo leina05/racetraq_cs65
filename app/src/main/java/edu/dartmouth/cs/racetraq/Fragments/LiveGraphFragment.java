@@ -226,6 +226,7 @@ public class LiveGraphFragment extends Fragment {
         {
             speedSeries = new SimpleXYSeries(
                     timeList, speedList, "Speed");
+
         }
 
         // create formatters to use for drawing a series using LineAndPointRenderer
@@ -233,8 +234,10 @@ public class LiveGraphFragment extends Fragment {
         LineAndPointFormatter speedSeriesFormat =
                 new LineAndPointFormatter(mActivity, R.xml.line_point_formatter_with_labels);
 
-        // add a new series' to the xyplot:
+
         plot.addSeries(speedSeries, speedSeriesFormat);
+
+
 
         plot.setDomainBoundaries(null, null, BoundaryMode.AUTO);
         plot.setRangeBoundaries(null, null, BoundaryMode.AUTO);

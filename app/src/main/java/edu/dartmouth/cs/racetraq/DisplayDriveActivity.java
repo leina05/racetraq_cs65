@@ -164,6 +164,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
             if (pointCount == numPoints)
             {
                 createPlot();
+                plot.redraw();
             }
 
         }
