@@ -259,15 +259,7 @@ public class DisplayDriveActivity extends AppCompatActivity implements OnMapRead
         plot.setDomainBoundaries(null, null, BoundaryMode.AUTO);
         plot.setRangeBoundaries(null, null, BoundaryMode.AUTO);
 
-//        plot.getLegend().setTableModel(new FixedTableModel(PixelUtils.dpToPix(300),
-//                PixelUtils.dpToPix(100), TableOrder.ROW_MAJOR));
-
-//        plot.getLegend().setSize(new Size(
-//                PixelUtils.dpToPix(40), SizeMode.ABSOLUTE,
-//                PixelUtils.dpToPix(200), SizeMode.ABSOLUTE));
-//
-//        plot.getLegend().setTableModel(new DynamicTableModel(2, 1, TableOrder.ROW_MAJOR));
-
+        // TODO: adjust legend positioning
 
     }
 

@@ -16,6 +16,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,7 +55,7 @@ import static edu.dartmouth.cs.racetraq.Utils.Constants.storageURL;
 public class LiveMapFragment extends Fragment {
 
     private static final int PERMISSION_REQUEST_CODE = 1;
-
+    private static final String TAG = "LiveMapFragment";
 
     private Context mActivity;
 
@@ -213,7 +214,6 @@ public class LiveMapFragment extends Fragment {
                 pathOptions.add(latlng);
                 path = googleMap.addPolyline(pathOptions);
 
-                // update entry parameters
             }
         }
     }
@@ -225,7 +225,6 @@ public class LiveMapFragment extends Fragment {
             @Override
             public void onSnapshotReady(Bitmap snapshot)
             {
-                // TODO Auto-generated method stub
                 bitmap = snapshot;
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -239,30 +238,14 @@ public class LiveMapFragment extends Fragment {
                     @Override
                     public void onFailure(@NonNull Exception exception) {
                         // Handle unsuccessful uploads
+                        Log.d(TAG, "Unsuccessful map upload to Firebase storage");
                     }
                 }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                        // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
-                        Uri downloadUrl = taskSnapshot.getUploadSessionUri();
+                        Log.d(TAG, "Successful map upload to Firebase storage");
                     }
                 });
-
-//                OutputStream fout = null;
-//
-//                String myFilePath = filePath;
-//                try (FileOutputStream out = getContext().openFileOutput(myFilePath, MODE_PRIVATE)) {
-//                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-//                    // PNG is a lossless format, the compression factor (100) is ignored
-//
-//                    out.flush();
-//                    out.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                    myFilePath = "";
-//                }
-
-                // could call another method here with myFilePath
             }
         };
 

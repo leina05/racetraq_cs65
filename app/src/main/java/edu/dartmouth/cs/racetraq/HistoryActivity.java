@@ -181,15 +181,12 @@ public class HistoryActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         paused = true;
-//        mRef.child(mUserID).child("drive_entries").removeEventListener(driveEntryListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         paused = false;
-//        driveEntryList.clear();
-//        mRef.child(mUserID).child("drive_entries").addChildEventListener(driveEntryListener);
     }
 
     /**
@@ -199,9 +196,10 @@ public class HistoryActivity extends AppCompatActivity {
 
         @Override
         public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-            // if no summary, delete entry
+            // only listen when not paused so don't add entries before they are complete
             if (!paused)
             {
+                // if no summary, delete entry
                 if (dataSnapshot.child("summary").getValue() == null) {
                     dataSnapshot.getRef().removeValue();
                 } else {
@@ -222,6 +220,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         @Override
         public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+            // delete entries from UI when they have been removed
             String timestamp = (String) dataSnapshot.child("summary").child("driveTimeStamp").getValue();
             HistoryActivity.DeleteDriveTask task = new HistoryActivity.DeleteDriveTask();
             task.execute(timestamp);
@@ -239,22 +238,10 @@ public class HistoryActivity extends AppCompatActivity {
         }
     };
 
-//    OnSuccessListener mapDownloadSuccessListener = new OnSuccessListener<byte[]>() {
-//
-//
-//        @Override
-//        public void onSuccess(byte[] bytes) {
-//
-//        }
-//    };
-//
-//    OnFailureListener mapDownloadFailureListener = new OnFailureListener() {
-//        @Override
-//        public void onFailure(@NonNull Exception e) {
-//
-//        }
-//    };
 
+    /**
+     * Convert Firebase DataSnapshot to DriveEntry
+     */
     private DriveEntry snapshotToDriveEntry(DataSnapshot ds) {
         DriveEntryFB entry = new DriveEntryFB();
 
@@ -277,6 +264,9 @@ public class HistoryActivity extends AppCompatActivity {
      * ASYNC TASKS
      **/
 
+    /**
+     * Background task to delete drive entry from entryList
+     */
     class DeleteDriveTask extends AsyncTask<String, Void, Void> {
 
 
@@ -318,6 +308,9 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Background task to download map snapshot from Firebase Storage
+     */
     class DownloadMapTask extends AsyncTask<Integer, Void, Void> {
 
 

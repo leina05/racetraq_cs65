@@ -39,19 +39,22 @@ public class SaveDriveDialogFragment extends DialogFragment {
 
         /* Set edit text view */
         final EditText dialogInput = new EditText(getActivity());
+        LinearLayout container = new LinearLayout(getActivity());
+        container.setOrientation(LinearLayout.VERTICAL);
+
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        lp.setMargins(30, 0, 30, 0);
+
         dialogInput.setLayoutParams(lp);
         if (title_id == R.string.drive_name)
         {
             dialogInput.setInputType(InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         }
-        else
-        {
-            dialogInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        }
-        dialog.setView(dialogInput);
+        container.addView(dialogInput);
+        dialog.setView(container);
 
         /* Set OK button */
         dialog.setPositiveButton("Save",
